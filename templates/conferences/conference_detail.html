@@ -1,0 +1,354 @@
+<!-- templates/conferences/conference_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ conference.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Хлебные крошки -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_list' %}">Конференции</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ conference.title|truncatechars:50 }}</li>
+            </ol>
+        </nav>
+
+        <!-- Основная карточка конференции -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">{{ conference.title }}</h4>
+                {% if conference.is_featured %}
+                    <span class="badge bg-warning">Рекомендуемая</span>
+                {% endif %}
+            </div>
+
+            {% if conference.poster %}
+                <img src="{{ conference.poster.url }}" class="card-img-top" alt="{{ conference.title }}" style="max-height: 300px; object-fit: cover;">
+            {% endif %}
+
+            <div class="card-body">
+                {% if conference.short_title %}
+                    <h6 class="text-muted mb-3">{{ conference.short_title }}</h6>
+                {% endif %}
+
+                <!-- Статус конференции -->
+                <div class="mb-3">
+                    {% if conference.status == 'published' %}
+                        <span class="badge bg-success">Опубликована</span>
+                    {% elif conference.status == 'pending' %}
+                        <span class="badge bg-warning">На модерации</span>
+                    {% elif conference.status == 'draft' %}
+                        <span class="badge bg-secondary">Черновик</span>
+                    {% elif conference.status == 'archived' %}
+                        <span class="badge bg-secondary">В архиве</span>
+                    {% endif %}
+
+                    {% if conference.is_upcoming %}
+                        <span class="badge bg-success">Предстоит</span>
+                    {% elif conference.is_ongoing %}
+                        <span class="badge bg-warning">Идёт сейчас</span>
+                    {% elif conference.is_past %}
+                        <span class="badge bg-secondary">Прошла</span>
+                    {% endif %}
+                </div>
+
+                <!-- Основная информация -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5>Организатор</h5>
+                        <p>
+                            <a href="{% url 'organizations:organization_detail' conference.organization.pk %}" class="text-decoration-none">
+                                <strong>{{ conference.organization.name }}</strong>
+                            </a>
+                        </p>
+
+                        <h5>Тип и формат</h5>
+                        <p>
+                            <span class="badge bg-info">{{ conference.get_conference_type_display }}</span>
+                            <span class="badge bg-info">{{ conference.get_format_display }}</span>
+                        </p>
+
+                        <h5>Научные направления</h5>
+                        <p>
+                            {% for topic in conference.topics.all %}
+                                <a href="{% url 'conferences:by_topic' topic.slug %}" class="badge bg-secondary text-decoration-none">
+                                    {{ topic.name }}
+                                </a>
+                            {% endfor %}
+                        </p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>Даты проведения</h5>
+                        <p>
+                            <i class="bi bi-calendar"></i>
+                            {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}
+                        </p>
+
+                        <h5>Дедлайн подачи заявок</h5>
+                        <p>
+                            <i class="bi bi-clock"></i>
+                            {{ conference.deadline|date:"d.m.Y" }}
+                            {% if conference.deadline_passed %}
+                                <span class="badge bg-danger">Дедлайн прошёл</span>
+                            {% else %}
+                                <span class="badge bg-success">Осталось {{ conference.days_until_deadline }} дн.</span>
+                            {% endif %}
+                        </p>
+
+                        <h5>Место проведения</h5>
+                        <p>
+                            <i class="bi bi-geo-alt"></i>
+                            {{ conference.location|default:"Не указано" }}
+                            {% if conference.venue %}
+                                <br><small class="text-muted">{{ conference.venue }}</small>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Подробное описание -->
+                <h5>Описание</h5>
+                <div class="mb-4">
+                    {{ conference.description|linebreaks }}
+                </div>
+
+                {% if conference.program %}
+                    <h5>Программа</h5>
+                    <div class="mb-4">
+                        {{ conference.program|linebreaks }}
+                    </div>
+                {% endif %}
+
+                {% if conference.requirements %}
+                    <h5>Требования к оформлению</h5>
+                    <div class="mb-4">
+                        {{ conference.requirements|linebreaks }}
+                    </div>
+                {% endif %}
+
+                {% if conference.participation_terms %}
+                    <h5>Условия участия</h5>
+                    <div class="mb-4">
+                        {{ conference.participation_terms|linebreaks }}
+                        {% if conference.is_free %}
+                            <span class="badge bg-success">Бесплатно</span>
+                        {% else %}
+                            <span class="badge bg-warning">Платно</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <!-- Дополнительные файлы -->
+                {% if conference.files.all %}
+                    <h5>Материалы конференции</h5>
+                    <ul class="list-group mb-4">
+                        {% for file in conference.files.all %}
+                            <li class="list-group-item">
+                                <a href="{{ file.file.url }}" target="_blank">
+                                    <i class="bi bi-file-earmark"></i> {{ file.title }}
+                                </a>
+                                <small class="text-muted">({{ file.get_file_type_display }})</small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Кнопки действий -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center mb-4">
+            {% if user.is_authenticated %}
+                {% if not conference.deadline_passed and conference.status == 'published' %}
+                    {% if not user_application %}
+                        <a href="{% url 'conferences:apply_to_conference' conference.slug %}" class="btn btn-success btn-lg">
+                            <i class="bi bi-send"></i> Подать заявку
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg" disabled>
+                            <i class="bi bi-check"></i> Заявка подана
+                        </button>
+                    {% endif %}
+                {% endif %}
+
+                <form method="post" action="{% url 'conferences:toggle_favorite' conference.pk %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        {% if is_favorite %}
+                            <i class="bi bi-star-fill"></i> В избранном
+                        {% else %}
+                            <i class="bi bi-star"></i> В избранное
+                        {% endif %}
+                    </button>
+                </form>
+
+                {% if conference.is_past and not user_review and user_application %}
+                    <a href="{% url 'conferences:add_review' conference.slug %}" class="btn btn-info btn-lg">
+                        <i class="bi bi-chat"></i> Оставить отзыв
+                    </a>
+                {% endif %}
+
+                {% if can_edit %}
+                    <a href="{% url 'organizations:edit_conference' conference.pk %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-pencil"></i> Редактировать
+                    </a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Войдите, чтобы подать заявку
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Отзывы -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Отзывы ({{ reviews_count }})</h5>
+                <div>
+                    Средняя оценка:
+                    {% for i in "12345"|make_list %}
+                        {% if forloop.counter <= avg_rating|floatformat:0 %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                        {% else %}
+                            <i class="bi bi-star text-warning"></i>
+                        {% endif %}
+                    {% endfor %}
+                    ({{ avg_rating }})
+                </div>
+            </div>
+            <div class="card-body">
+                {% if reviews %}
+                    {% for review in reviews %}
+                        <div class="mb-4 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong>{{ review.user.get_full_name|default:review.user.email }}</strong>
+                                    {% if review.is_verified %}
+                                        <span class="badge bg-success" title="Подтверждённый участник">✓</span>
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    {% for i in "12345"|make_list %}
+                                        {% if forloop.counter <= review.rating %}
+                                            <i class="bi bi-star-fill text-warning"></i>
+                                        {% else %}
+                                            <i class="bi bi-star text-warning"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            {% if review.title %}
+                                <h6>{{ review.title }}</h6>
+                            {% endif %}
+
+                            <p>{{ review.text }}</p>
+
+                            {% if review.pros %}
+                                <p class="text-success mb-1">
+                                    <i class="bi bi-plus-circle"></i> <strong>Плюсы:</strong> {{ review.pros }}
+                                </p>
+                            {% endif %}
+
+                            {% if review.cons %}
+                                <p class="text-danger mb-1">
+                                    <i class="bi bi-dash-circle"></i> <strong>Минусы:</strong> {{ review.cons }}
+                                </p>
+                            {% endif %}
+
+                            <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">Пока нет отзывов. Будьте первым, кто оставит отзыв!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Правая колонка -->
+    <div class="col-md-4">
+        <!-- Контактная информация -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Контактная информация</h5>
+            </div>
+            <div class="card-body">
+                <p>
+                    <i class="bi bi-envelope"></i>
+                    <a href="mailto:{{ conference.contact_email }}">{{ conference.contact_email }}</a>
+                </p>
+
+                {% if conference.contact_phone %}
+                    <p>
+                        <i class="bi bi-telephone"></i>
+                        {{ conference.contact_phone }}
+                    </p>
+                {% endif %}
+
+                {% if conference.contact_person %}
+                    <p>
+                        <i class="bi bi-person"></i>
+                        {{ conference.contact_person }}
+                    </p>
+                {% endif %}
+
+                {% if conference.website %}
+                    <p>
+                        <i class="bi bi-globe"></i>
+                        <a href="{{ conference.website }}" target="_blank">{{ conference.website }}</a>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3>{{ conference.view_count }}</h3>
+                        <small class="text-muted">Просмотров</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ conference.favorites_count }}</h3>
+                        <small class="text-muted">В избранном</small>
+                    </div>
+                    <div class="col-4">
+                        <h3>{{ conference.applications_count }}</h3>
+                        <small class="text-muted">Заявок</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Похожие конференции -->
+        {% if similar_conferences %}
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Похожие конференции</h5>
+                </div>
+                <div class="card-body">
+                    {% for similar in similar_conferences %}
+                        <div class="mb-3 pb-2 {% if not forloop.last %}border-bottom{% endif %}">
+                            <h6>
+                                <a href="{% url 'conferences:conference_detail' similar.slug %}" class="text-decoration-none">
+                                    {{ similar.title|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {{ similar.start_date|date:"d.m.Y" }} - {{ similar.end_date|date:"d.m.Y" }}
+                            </small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

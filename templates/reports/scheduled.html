@@ -1,0 +1,29 @@
+<!-- templates/reports/scheduled.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Запланированные отчёты{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-clock"></i> Запланированные отчёты</h4>
+                <a href="{% url 'reports:schedule_create' %}" class="btn btn-light">
+                    <i class="bi bi-plus-circle"></i> Создать
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Функция запланированных отчётов находится в разработке.
+                </div>
+
+                <a href="{% url 'reports:list' %}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,326 @@
+<!-- templates/core/index.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Платформа продвижения научных конференций{% endblock %}
+
+{% block content %}
+<!-- Hero секция -->
+<div class="hero-section bg-primary text-white py-5 mb-5 rounded">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold">Научные конференции</h1>
+                <p class="lead">Найдите конференции по вашей тематике, подайте заявку и станьте частью научного сообщества</p>
+                <div class="d-flex gap-3">
+                    <a href="{% url 'conferences:conference_list' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-search"></i> Найти конференцию
+                    </a>
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'register' %}" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-person-plus"></i> Регистрация
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="stats-grid">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h2 class="display-5 fw-bold">{{ total_conferences }}</h2>
+                                <p>Конференций</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h2 class="display-5 fw-bold">{{ total_organizations }}</h2>
+                                <p>Организаций</p>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-item">
+                                <h2 class="display-5 fw-bold">{{ upcoming_count }}</h2>
+                                <p>Предстоит</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Рекомендации для авторизованных пользователей -->
+{% if user.is_authenticated and recommended_conferences %}
+    <div class="mb-5">
+        <h2 class="mb-4">
+            <i class="bi bi-star-fill text-warning"></i>
+            Рекомендовано для вас
+        </h2>
+        <div class="row">
+            {% for conference in recommended_conferences %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        {% if conference.poster %}
+                            <img src="{{ conference.poster.url }}" class="card-img-top" alt="{{ conference.title }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
+                                    {{ conference.title|truncatechars:60 }}
+                                </a>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                <i class="bi bi-building"></i> {{ conference.organization.short_name }}
+                            </h6>
+                            <p class="card-text">
+                                <i class="bi bi-calendar"></i> {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}<br>
+                                <i class="bi bi-geo-alt"></i> {{ conference.location|default:"Онлайн" }}<br>
+                                <i class="bi bi-clock"></i> Дедлайн: {{ conference.deadline|date:"d.m.Y" }}
+                                {% if conference.days_until_deadline %}
+                                    <span class="badge bg-warning">{{ conference.days_until_deadline }} дн.</span>
+                                {% endif %}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    {% for topic in conference.topics.all|slice:":2" %}
+                                        <span class="badge bg-secondary">{{ topic.name|truncatechars:15 }}</span>
+                                    {% endfor %}
+                                </div>
+                                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="btn btn-sm btn-outline-primary">
+                                    Подробнее
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Ближайшие конференции -->
+<div class="mb-5">
+    <h2 class="mb-4">
+        <i class="bi bi-calendar-check text-primary"></i>
+        Ближайшие конференции
+        <small class="text-muted fs-6">(в ближайшие 7 дней)</small>
+    </h2>
+
+    {% if upcoming_conferences %}
+        <div class="row">
+            {% for conference in upcoming_conferences %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-primary">
+                        <div class="card-header bg-primary text-white">
+                            <strong>{{ conference.start_date|date:"d.m.Y" }}</strong>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
+                                    {{ conference.title|truncatechars:60 }}
+                                </a>
+                            </h5>
+                            <p class="card-text">
+                                <i class="bi bi-building"></i> {{ conference.organization.short_name }}<br>
+                                <i class="bi bi-geo-alt"></i> {{ conference.location|default:"Онлайн" }}
+                            </p>
+                            <a href="{% url 'conferences:conference_detail' conference.slug %}" class="stretched-link"></a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> В ближайшие 7 дней конференций не запланировано.
+        </div>
+    {% endif %}
+
+    <div class="text-center mt-3">
+        <a href="{% url 'conferences:conference_list' %}" class="btn btn-outline-primary">
+            Все конференции <i class="bi bi-arrow-right"></i>
+        </a>
+    </div>
+</div>
+
+<!-- Рекомендуемые конференции -->
+{% if featured_conferences %}
+    <div class="mb-5">
+        <h2 class="mb-4">
+            <i class="bi bi-star-fill text-warning"></i>
+            Рекомендуемые конференции
+        </h2>
+
+        <div class="row">
+            {% for conference in featured_conferences %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100 border-warning">
+                        <div class="card-header bg-warning">
+                            <strong>Рекомендуемая</strong>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
+                                    {{ conference.title|truncatechars:60 }}
+                                </a>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">
+                                {{ conference.organization.short_name }}
+                            </h6>
+                            <p class="card-text">
+                                {{ conference.description|truncatechars:100 }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    <i class="bi bi-eye"></i> {{ conference.view_count }}
+                                </small>
+                                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="btn btn-sm btn-warning">
+                                    Подробнее
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Две колонки: популярные конференции и ближайшие дедлайны -->
+<div class="row mb-5">
+    <div class="col-md-6">
+        <h3 class="mb-3">
+            <i class="bi bi-fire text-danger"></i>
+            Популярные конференции
+        </h3>
+        <div class="list-group">
+            {% for conference in popular_conferences %}
+                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ conference.title|truncatechars:50 }}</h6>
+                        <small class="text-muted">
+                            <i class="bi bi-eye"></i> {{ conference.view_count }}
+                        </small>
+                    </div>
+                    <p class="mb-1">
+                        <small>
+                            <i class="bi bi-building"></i> {{ conference.organization.short_name }} |
+                            <i class="bi bi-calendar"></i> {{ conference.start_date|date:"d.m.Y" }}
+                        </small>
+                    </p>
+                </a>
+            {% empty %}
+                <div class="alert alert-light">Популярных конференций пока нет</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <h3 class="mb-3">
+            <i class="bi bi-clock text-warning"></i>
+            Горящие дедлайны
+        </h3>
+        <div class="list-group">
+            {% for conference in deadline_conferences %}
+                <a href="{% url 'conferences:conference_detail' conference.slug %}" class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ conference.title|truncatechars:50 }}</h6>
+                        <small class="text-danger fw-bold">
+                            {{ conference.days_until_deadline }} дн.
+                        </small>
+                    </div>
+                    <p class="mb-1">
+                        <small>
+                            <i class="bi bi-building"></i> {{ conference.organization.short_name }} |
+                            <i class="bi bi-calendar"></i> Дедлайн: {{ conference.deadline|date:"d.m.Y" }}
+                        </small>
+                    </p>
+                </a>
+            {% empty %}
+                <div class="alert alert-light">Ближайших дедлайнов нет</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Активные организации -->
+<div class="mb-5">
+    <h3 class="mb-3">
+        <i class="bi bi-building"></i>
+        Активные организаторы
+    </h3>
+    <div class="row">
+        {% for org in active_organizations %}
+            <div class="col-md-3 col-6 mb-3">
+                <div class="card h-100 text-center">
+                    <div class="card-body">
+                        {% if org.logo %}
+                            <img src="{{ org.logo.url }}" alt="{{ org.name }}" class="img-fluid mb-2" style="max-height: 60px;">
+                        {% else %}
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                <span class="h4">{{ org.short_name|default:org.name|slice:":2" }}</span>
+                            </div>
+                        {% endif %}
+                        <h6 class="card-title">
+                            <a href="{% url 'organizations:organization_detail' org.pk %}" class="text-decoration-none">
+                                {{ org.short_name|default:org.name|truncatechars:20 }}
+                            </a>
+                        </h6>
+                        <p class="card-text">
+                            <small class="text-muted">{{ org.conf_count }} конференций</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-light">Нет активных организаций</div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Популярные тематики -->
+<div class="mb-5">
+    <h3 class="mb-3">
+        <i class="bi bi-tags"></i>
+        Популярные тематики
+    </h3>
+    <div class="d-flex flex-wrap gap-2">
+        {% for topic in popular_topics %}
+            <a href="{% url 'conferences:by_topic' topic.slug %}" class="btn btn-outline-primary">
+                {{ topic.name }}
+                <span class="badge bg-primary">{{ topic.conf_count }}</span>
+            </a>
+        {% empty %}
+            <div class="alert alert-light">Нет доступных тематик</div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Информация для организаций -->
+<div class="bg-light p-5 rounded mt-5">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h3>Представляете организацию?</h3>
+            <p class="lead mb-0">
+                Размещайте информацию о ваших конференциях, привлекайте участников
+                и управляйте заявками через удобный личный кабинет.
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+            {% if user.is_authenticated %}
+                <a href="{% url 'organizations:dashboard' %}" class="btn btn-primary btn-lg">
+                    Перейти в панель управления
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                    Войти для организаций
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

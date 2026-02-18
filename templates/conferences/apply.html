@@ -1,0 +1,156 @@
+<!-- templates/conferences/apply.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Подача заявки - {{ conference.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Хлебные крошки -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_list' %}">Конференции</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_detail' conference.slug %}">{{ conference.title|truncatechars:50 }}</a></li>
+                <li class="breadcrumb-item active">Подача заявки</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Подача заявки на участие</h4>
+            </div>
+            <div class="card-body">
+                <!-- Информация о конференции -->
+                <div class="alert alert-info">
+                    <h5>{{ conference.title }}</h5>
+                    <p class="mb-0">
+                        <strong>Организатор:</strong> {{ conference.organization.name }}<br>
+                        <strong>Даты проведения:</strong> {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}<br>
+                        <strong>Дедлайн подачи:</strong> {{ conference.deadline|date:"d.m.Y" }}
+                        {% if conference.days_until_deadline %}
+                            <span class="badge bg-success">Осталось {{ conference.days_until_deadline }} дн.</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Личная информация -->
+                    <h5 class="mt-4">1. Личная информация</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.full_name.id_for_label }}" class="form-label">ФИО *</label>
+                            {{ form.full_name }}
+                            {% if form.full_name.errors %}
+                                <div class="text-danger">{{ form.full_name.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email *</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.organization.id_for_label }}" class="form-label">Место работы/учебы *</label>
+                            {{ form.organization }}
+                            {% if form.organization.errors %}
+                                <div class="text-danger">{{ form.organization.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.academic_degree.id_for_label }}" class="form-label">Ученая степень/статус</label>
+                            {{ form.academic_degree }}
+                            {% if form.academic_degree.errors %}
+                                <div class="text-danger">{{ form.academic_degree.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Информация о докладе -->
+                    <h5 class="mt-4">2. Информация о докладе</h5>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="{{ form.presentation_title.id_for_label }}" class="form-label">Тема доклада *</label>
+                        {{ form.presentation_title }}
+                        {% if form.presentation_title.errors %}
+                            <div class="text-danger">{{ form.presentation_title.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.presentation_type.id_for_label }}" class="form-label">Тип доклада *</label>
+                        {{ form.presentation_type }}
+                        {% if form.presentation_type.errors %}
+                            <div class="text-danger">{{ form.presentation_type.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Тезисы -->
+                    <h5 class="mt-4">3. Тезисы доклада</h5>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="{{ form.abstract.id_for_label }}" class="form-label">Файл с тезисами</label>
+                        {{ form.abstract }}
+                        {% if form.abstract.errors %}
+                            <div class="text-danger">{{ form.abstract.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Принимаются файлы PDF, DOC, DOCX (максимум 5 МБ)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.abstract_text.id_for_label }}" class="form-label">Или вставьте текст тезисов</label>
+                        {{ form.abstract_text }}
+                        {% if form.abstract_text.errors %}
+                            <div class="text-danger">{{ form.abstract_text.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Если у вас нет файла, вы можете вставить текст тезисов сюда</div>
+                    </div>
+
+                    <!-- Дополнительная информация -->
+                    <h5 class="mt-4">4. Дополнительная информация</h5>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="{{ form.comment.id_for_label }}" class="form-label">Комментарий</label>
+                        {{ form.comment }}
+                        {% if form.comment.errors %}
+                            <div class="text-danger">{{ form.comment.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Любая дополнительная информация для оргкомитета</div>
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'conferences:conference_detail' conference.slug %}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send"></i> Отправить заявку
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

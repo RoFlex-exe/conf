@@ -1,0 +1,216 @@
+<!-- templates/users/favorites.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Моё избранное{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-person"></i> Профиль
+            </a>
+            <a href="{% url 'favorites' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-star"></i> Избранное
+            </a>
+            <a href="{% url 'conferences:my_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-send"></i> Мои заявки
+            </a>
+            <a href="{% url 'notification_settings' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-bell"></i> Настройки уведомлений
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-star"></i> Моё избранное</h4>
+            </div>
+            <div class="card-body">
+                <!-- Вкладки -->
+                <ul class="nav nav-tabs mb-3" id="favoritesTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if current_tab == 'conferences' %}active{% endif %}"
+                           href="?tab=conferences&page=1"
+                           role="tab">
+                            <i class="bi bi-calendar-event"></i> Конференции
+                            <span class="badge bg-primary">{{ favorite_conferences.paginator.count }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link {% if current_tab == 'organizations' %}active{% endif %}"
+                           href="?tab=organizations&page=1"
+                           role="tab">
+                            <i class="bi bi-building"></i> Организации
+                            <span class="badge bg-primary">{{ favorite_organizations.paginator.count }}</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Конференции -->
+                {% if current_tab == 'conferences' %}
+                    <div class="tab-pane fade show active" role="tabpanel">
+                        {% if favorite_conferences %}
+                            <div class="list-group">
+                                {% for conference in favorite_conferences %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <a href="{% url 'conferences:conference_detail' conference.slug %}">
+                                                        {{ conference.title }}
+                                                    </a>
+                                                </h6>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-building"></i> {{ conference.organization.short_name }} |
+                                                        <i class="bi bi-calendar"></i> {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }} |
+                                                        <i class="bi bi-geo-alt"></i> {{ conference.location|default:"Онлайн" }}
+                                                    </small>
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <form method="post" action="{% url 'conferences:toggle_favorite' conference.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-warning" title="Удалить из избранного">
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Пагинация для конференций -->
+                            {% if favorite_conferences.has_other_pages %}
+                                <nav aria-label="Page navigation" class="mt-3">
+                                    <ul class="pagination justify-content-center">
+                                        {% if favorite_conferences.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?tab=conferences&page={{ favorite_conferences.previous_page_number }}">
+                                                    &laquo;
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for i in favorite_conferences.paginator.page_range %}
+                                            {% if favorite_conferences.number == i %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ i }}</span>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?tab=conferences&page={{ i }}">
+                                                        {{ i }}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if favorite_conferences.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?tab=conferences&page={{ favorite_conferences.next_page_number }}">
+                                                    &raquo;
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            {% endif %}
+
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> У вас пока нет избранных конференций.
+                                <a href="{% url 'conferences:conference_list' %}" class="alert-link">Перейти к списку конференций</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <!-- Организации -->
+                {% if current_tab == 'organizations' %}
+                    <div class="tab-pane fade show active" role="tabpanel">
+                        {% if favorite_organizations %}
+                            <div class="list-group">
+                                {% for organization in favorite_organizations %}
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <a href="{% url 'organizations:organization_detail' organization.pk %}">
+                                                        {{ organization.name }}
+                                                    </a>
+                                                </h6>
+                                                <p class="mb-1">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-geo-alt"></i> {{ organization.legal_address|truncatechars:50 }} |
+                                                        <i class="bi bi-envelope"></i> {{ organization.contact_email }}
+                                                    </small>
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <form method="post" action="{% url 'organizations:toggle_favorite_org' organization.pk %}" class="d-inline">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-warning" title="Удалить из избранного">
+                                                        <i class="bi bi-star-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            <!-- Пагинация для организаций -->
+                            {% if favorite_organizations.has_other_pages %}
+                                <nav aria-label="Page navigation" class="mt-3">
+                                    <ul class="pagination justify-content-center">
+                                        {% if favorite_organizations.has_previous %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?tab=organizations&page={{ favorite_organizations.previous_page_number }}">
+                                                    &laquo;
+                                                </a>
+                                            </li>
+                                        {% endif %}
+
+                                        {% for i in favorite_organizations.paginator.page_range %}
+                                            {% if favorite_organizations.number == i %}
+                                                <li class="page-item active">
+                                                    <span class="page-link">{{ i }}</span>
+                                                </li>
+                                            {% else %}
+                                                <li class="page-item">
+                                                    <a class="page-link" href="?tab=organizations&page={{ i }}">
+                                                        {{ i }}
+                                                    </a>
+                                                </li>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if favorite_organizations.has_next %}
+                                            <li class="page-item">
+                                                <a class="page-link" href="?tab=organizations&page={{ favorite_organizations.next_page_number }}">
+                                                    &raquo;
+                                                </a>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </nav>
+                            {% endif %}
+
+                        {% else %}
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> У вас пока нет избранных организаций.
+                                <a href="{% url 'organizations:organization_list' %}" class="alert-link">Перейти к списку организаций</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

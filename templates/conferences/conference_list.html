@@ -1,0 +1,203 @@
+<!-- templates/conferences/conference_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Конференции{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <!-- Боковая панель с фильтрами -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Фильтры</h5>
+            </div>
+            <div class="card-body">
+                <form method="get">
+                    <!-- Поиск -->
+                    <div class="mb-3">
+                        <label class="form-label">Поиск</label>
+                        <input type="text" name="q" class="form-control" value="{{ current_filters.q }}" placeholder="Название или описание">
+                    </div>
+
+                    <!-- Тематика -->
+                    <div class="mb-3">
+                        <label class="form-label">Тематика</label>
+                        <select name="topic" class="form-select">
+                            <option value="">Все тематики</option>
+                            {% for topic in topics %}
+                                <option value="{{ topic.slug }}" {% if current_filters.topic == topic.slug %}selected{% endif %}>
+                                    {{ topic.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Тип конференции -->
+                    <div class="mb-3">
+                        <label class="form-label">Тип</label>
+                        <select name="type" class="form-select">
+                            <option value="">Все типы</option>
+                            <option value="international" {% if current_filters.type == 'international' %}selected{% endif %}>Международная</option>
+                            <option value="national" {% if current_filters.type == 'national' %}selected{% endif %}>Всероссийская</option>
+                            <option value="regional" {% if current_filters.type == 'regional' %}selected{% endif %}>Региональная</option>
+                            <option value="university" {% if current_filters.type == 'university' %}selected{% endif %}>Вузовская</option>
+                        </select>
+                    </div>
+
+                    <!-- Формат -->
+                    <div class="mb-3">
+                        <label class="form-label">Формат</label>
+                        <select name="format" class="form-select">
+                            <option value="">Все форматы</option>
+                            <option value="offline" {% if current_filters.format == 'offline' %}selected{% endif %}>Очная</option>
+                            <option value="online" {% if current_filters.format == 'online' %}selected{% endif %}>Онлайн</option>
+                            <option value="hybrid" {% if current_filters.format == 'hybrid' %}selected{% endif %}>Гибридная</option>
+                        </select>
+                    </div>
+
+                    <!-- Период -->
+                    <div class="mb-3">
+                        <label class="form-label">Период</label>
+                        <select name="period" class="form-select">
+                            <option value="">Все конференции</option>
+                            <option value="upcoming" {% if current_filters.period == 'upcoming' %}selected{% endif %}>Предстоящие</option>
+                            <option value="ongoing" {% if current_filters.period == 'ongoing' %}selected{% endif %}>Идут сейчас</option>
+                            <option value="past" {% if current_filters.period == 'past' %}selected{% endif %}>Прошедшие</option>
+                        </select>
+                    </div>
+
+                    <!-- Сортировка -->
+                    <div class="mb-3">
+                        <label class="form-label">Сортировка</label>
+                        <select name="sort" class="form-select">
+                            <option value="-start_date" {% if current_filters.sort == '-start_date' %}selected{% endif %}>Сначала новые</option>
+                            <option value="start_date" {% if current_filters.sort == 'start_date' %}selected{% endif %}>Сначала старые</option>
+                            <option value="title" {% if current_filters.sort == 'title' %}selected{% endif %}>По названию (А-Я)</option>
+                            <option value="-title" {% if current_filters.sort == '-title' %}selected{% endif %}>По названию (Я-А)</option>
+                            <option value="deadline" {% if current_filters.sort == 'deadline' %}selected{% endif %}>По дедлайну (ближайшие)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Применить фильтры</button>
+                    <a href="{% url 'conferences:conference_list' %}" class="btn btn-outline-secondary w-100 mt-2">Сбросить</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <!-- Заголовок и статистика -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1>Конференции</h1>
+            <div class="text-muted">
+                Найдено: {{ conferences.paginator.count }}
+                ({{ upcoming_count }} предстоящих)
+            </div>
+        </div>
+
+        <!-- Список конференций -->
+        {% for conference in conferences %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
+                            {{ conference.title }}
+                        </a>
+                        {% if conference.is_featured %}
+                            <span class="badge bg-warning">Рекомендуемая</span>
+                        {% endif %}
+                    </h5>
+
+                    <h6 class="card-subtitle mb-2 text-muted">
+                        <a href="{% url 'organizations:organization_detail' conference.organization.pk %}" class="text-muted text-decoration-none">
+                            {{ conference.organization.name }}
+                        </a>
+                    </h6>
+
+                    <p class="card-text">
+                        <strong>Даты:</strong> {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}<br>
+                        <strong>Дедлайн:</strong> {{ conference.deadline|date:"d.m.Y" }}
+                        {% if conference.deadline_passed %}
+                            <span class="badge bg-danger">Дедлайн прошёл</span>
+                        {% else %}
+                            <span class="badge bg-success">{{ conference.days_until_deadline }} дн.</span>
+                        {% endif %}<br>
+                        <strong>Место:</strong> {{ conference.location|default:"Не указано" }}<br>
+                        <strong>Тип:</strong> {{ conference.get_conference_type_display }} |
+                        <strong>Формат:</strong> {{ conference.get_format_display }}
+                    </p>
+
+                    <!-- ИСПРАВЛЕННЫЙ БЛОК С ТЕМАТИКАМИ И СТАТИСТИКОЙ -->
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            {% for topic in conference.topics.all|slice:":3" %}
+                                <a href="{% url 'conferences:by_topic' topic.slug %}" class="badge bg-secondary text-decoration-none">
+                                    {{ topic.name }}
+                                </a>
+                            {% endfor %}
+                            {% if conference.topics.count > 3 %}
+                                <span class="badge bg-secondary">+{{ conference.topics.count|add:"-3" }}</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <span class="me-3"><i class="bi bi-eye"></i> {{ conference.view_count }}</span>
+                            <span class="me-3"><i class="bi bi-star"></i> {{ conference.favorites_count }}</span>
+                            <span><i class="bi bi-people"></i> {{ conference.applications_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="alert alert-warning">
+                Конференций не найдено. Попробуйте изменить параметры фильтрации.
+            </div>
+        {% endfor %}
+
+        <!-- Пагинация -->
+        {% if conferences.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if conferences.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ conferences.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                &laquo; Предыдущая
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo; Предыдущая</span>
+                        </li>
+                    {% endif %}
+
+                    {% for num in conferences.paginator.page_range %}
+                        {% if conferences.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if conferences.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ conferences.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">
+                                Следующая &raquo;
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Следующая &raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

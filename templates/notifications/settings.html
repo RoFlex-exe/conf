@@ -1,0 +1,154 @@
+<!-- templates/notifications/settings.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Настройки уведомлений{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-person"></i> Профиль
+            </a>
+            <a href="{% url 'favorites' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-star"></i> Избранное
+            </a>
+            <a href="{% url 'conferences:my_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-send"></i> Мои заявки
+            </a>
+            <a href="{% url 'notifications:list' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-bell"></i> Уведомления
+            </a>
+            <a href="{% url 'notifications:settings' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-gear"></i> Настройки
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-gear"></i> Настройки уведомлений</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <h5 class="mb-3">Типы уведомлений</h5>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_deadline" id="notify_deadline"
+                                   {% if settings.notify_deadline %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_deadline">
+                                <strong>Дедлайны</strong>
+                                <p class="text-muted small">Уведомления о приближающихся дедлайнах конференций</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_application" id="notify_application"
+                                   {% if settings.notify_application %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_application">
+                                <strong>Статус заявок</strong>
+                                <p class="text-muted small">Уведомления об изменении статуса ваших заявок</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_new_conference" id="notify_new_conference"
+                                   {% if settings.notify_new_conference %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_new_conference">
+                                <strong>Новые конференции</strong>
+                                <p class="text-muted small">Уведомления о новых конференциях по вашим интересам</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_favorite_org" id="notify_favorite_org"
+                                   {% if settings.notify_favorite_org %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_favorite_org">
+                                <strong>Новости от организаций</strong>
+                                <p class="text-muted small">Уведомления о новых конференциях от избранных организаций</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="notify_reminder" id="notify_reminder"
+                                   {% if settings.notify_reminder %}checked{% endif %}>
+                            <label class="form-check-label" for="notify_reminder">
+                                <strong>Напоминания</strong>
+                                <p class="text-muted small">Напоминания о предстоящих конференциях</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Периодичность</h5>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="send_weekly_digest" id="send_weekly_digest"
+                                   {% if settings.send_weekly_digest %}checked{% endif %}>
+                            <label class="form-check-label" for="send_weekly_digest">
+                                <strong>Еженедельный дайджест</strong>
+                                <p class="text-muted small">Получать еженедельную подборку новых конференций</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Способ доставки</h5>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="send_email" id="send_email"
+                                   {% if settings.send_email %}checked{% endif %}>
+                            <label class="form-check-label" for="send_email">
+                                <strong>Email</strong>
+                                <p class="text-muted small">Получать уведомления на email {{ user.email }}</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox"
+                                   name="send_site" id="send_site"
+                                   {% if settings.send_site %}checked{% endif %}>
+                            <label class="form-check-label" for="send_site">
+                                <strong>На сайте</strong>
+                                <p class="text-muted small">Показывать уведомления на сайте</p>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

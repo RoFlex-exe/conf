@@ -1,0 +1,107 @@
+<!-- templates/users/notifications.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Настройки уведомлений{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-person"></i> Профиль
+            </a>
+            <a href="{% url 'favorites' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-star"></i> Избранное
+            </a>
+            <a href="{% url 'conferences:my_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-send"></i> Мои заявки
+            </a>
+            <a href="{% url 'notification_settings' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-bell"></i> Настройки уведомлений
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-bell"></i> Настройки уведомлений</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <h5>Уведомления о новых конференциях</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_new" checked>
+                            <label class="form-check-label" for="notify_new">
+                                Получать уведомления о новых конференциях по моим интересам
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_weekly">
+                            <label class="form-check-label" for="notify_weekly">
+                                Еженедельный дайджест новых конференций
+                            </label>
+                        </div>
+                    </div>
+
+                    <h5>Уведомления о дедлайнах</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_deadline" checked>
+                            <label class="form-check-label" for="notify_deadline">
+                                Напоминать о приближающихся дедлайнах (за 7, 3 и 1 день)
+                            </label>
+                        </div>
+                    </div>
+
+                    <h5>Уведомления о статусе заявок</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_applications" checked>
+                            <label class="form-check-label" for="notify_applications">
+                                Получать уведомления об изменении статуса моих заявок
+                            </label>
+                        </div>
+                    </div>
+
+                    <h5>Уведомления от организаций</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notify_org">
+                            <label class="form-check-label" for="notify_org">
+                                Получать новости от избранных организаций
+                            </label>
+                        </div>
+                    </div>
+
+                    <h5>Способ доставки</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="notification_method" id="method_email" value="email" checked>
+                            <label class="form-check-label" for="method_email">
+                                Email ({{ user.email }})
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="notification_method" id="method_site" value="site">
+                            <label class="form-check-label" for="method_site">
+                                Только на сайте
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Сохранить настройки
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

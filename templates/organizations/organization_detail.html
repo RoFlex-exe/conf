@@ -1,0 +1,159 @@
+<!-- templates/organizations/organization_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <!-- Карточка организации -->
+        <div class="card mb-4">
+            {% if organization.logo %}
+                <img src="{{ organization.logo.url }}" class="card-img-top" alt="{{ organization.name }}" style="padding: 20px;">
+            {% else %}
+                <div class="text-center p-5 bg-light">
+                    <span class="display-1">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                </div>
+            {% endif %}
+            <div class="card-body">
+                <h4 class="card-title">{{ organization.name }}</h4>
+                {% if organization.short_name %}
+                    <h6 class="card-subtitle mb-3 text-muted">{{ organization.short_name }}</h6>
+                {% endif %}
+
+                <hr>
+
+                <h5>Контактная информация</h5>
+                <p>
+                    <strong>Контактное лицо:</strong> {{ organization.contact_person }}<br>
+                    {% if organization.contact_position %}
+                        <strong>Должность:</strong> {{ organization.contact_position }}<br>
+                    {% endif %}
+                    <strong>Email:</strong> <a href="mailto:{{ organization.contact_email }}">{{ organization.contact_email }}</a><br>
+                    <strong>Телефон:</strong> {{ organization.contact_phone }}<br>
+                    {% if organization.contact_fax %}
+                        <strong>Факс:</strong> {{ organization.contact_fax }}<br>
+                    {% endif %}
+                    {% if organization.website %}
+                        <strong>Сайт:</strong> <a href="{{ organization.website }}" target="_blank">{{ organization.website }}</a>
+                    {% endif %}
+                </p>
+
+                <hr>
+
+                <h5>Адрес</h5>
+                <p>
+                    <strong>Юридический адрес:</strong><br>
+                    {{ organization.legal_address }}<br>
+                    {% if organization.actual_address %}
+                        <strong>Фактический адрес:</strong><br>
+                        {{ organization.actual_address }}
+                    {% endif %}
+                </p>
+
+                <hr>
+
+                <p class="text-muted">
+                    <small>
+                        ИНН: {{ organization.inn }}<br>
+                        {% if organization.kpp %}КПП: {{ organization.kpp }}<br>{% endif %}
+                        Дата регистрации: {{ organization.created_at|date:"d.m.Y" }}
+                    </small>
+                </p>
+
+                {% if user.is_authenticated %}
+                    <form method="post" action="{% url 'organizations:toggle_favorite_org' organization.pk %}" class="d-inline">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning w-100">
+                            {% if is_favorite %}
+                                ★ В избранном
+                            {% else %}
+                                ☆ В избранное
+                            {% endif %}
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <!-- Описание организации -->
+        {% if organization.description %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Об организации</h5>
+                </div>
+                <div class="card-body">
+                    {{ organization.description|linebreaks }}
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Статистика -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Статистика</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <h3>{{ total_conferences }}</h3>
+                        <p class="text-muted">Всего конференций</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>{{ upcoming_conferences }}</h3>
+                        <p class="text-muted">Предстоящих</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h3>{{ past_conferences }}</h3>
+                        <p class="text-muted">Прошедших</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Конференции организации -->
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Конференции организатора</h5>
+                <a href="{% url 'conferences:conference_list' %}?organization={{ organization.pk }}" class="btn btn-light btn-sm">
+                    Все конференции →
+                </a>
+            </div>
+            <div class="card-body">
+                {% if conferences %}
+                    <div class="list-group">
+                        {% for conference in conferences %}
+                            <a href="{% url 'conferences:conference_detail' conference.slug %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ conference.title }}</h6>
+                                    <small class="text-muted">{{ conference.start_date|date:"d.m.Y" }}</small>
+                                </div>
+                                <p class="mb-1 text-muted">
+                                    {{ conference.get_conference_type_display }} |
+                                    {{ conference.get_format_display }} |
+                                    {{ conference.location|default:"Место не указано" }}
+                                </p>
+                                <small>
+                                    {% if conference.is_upcoming %}
+                                        <span class="badge bg-success">Предстоит</span>
+                                    {% elif conference.is_ongoing %}
+                                        <span class="badge bg-warning">Идёт сейчас</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Прошла</span>
+                                    {% endif %}
+                                    Просмотров: {{ conference.view_count }}
+                                </small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">У этой организации пока нет конференций.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

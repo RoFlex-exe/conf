@@ -1,0 +1,250 @@
+<!-- templates/organizations/dashboard.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Панель управления - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Боковое меню -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if organization.logo %}
+                    <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 100px;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 100px; height: 100px;">
+                        <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                    </div>
+                {% endif %}
+                <h5>{{ organization.name }}</h5>
+                <p class="text-muted">{{ organization.short_name }}</p>
+
+                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
+                </a>
+
+                {% if not organization.is_active %}
+                    <span class="badge bg-warning d-block">Договор не активен</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="list-group mt-3">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+                <span class="badge bg-primary rounded-pill float-end">{{ total_conferences }}</span>
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Заявки
+                <span class="badge bg-primary rounded-pill float-end">{{ total_applications }}</span>
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+
+        <div class="d-grid gap-2 mt-3">
+            <a href="{% url 'organizations:create_conference' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Создать конференцию
+            </a>
+        </div>
+    </div>
+
+    <!-- Основной контент -->
+    <div class="col-md-9">
+        <!-- Приветствие -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h4>Добро пожаловать, {{ organization.name }}!</h4>
+                <p class="text-muted">Последний вход: {{ user.last_login|date:"d.m.Y H:i"|default:"недавно" }}</p>
+            </div>
+        </div>
+
+        <!-- Статистика в карточках -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title">Всего конференций</h5>
+                        <h2 class="display-4">{{ total_conferences }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title">Опубликовано</h5>
+                        <h2 class="display-4">{{ published_conferences }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title">На модерации</h5>
+                        <h2 class="display-4">{{ pending_conferences }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title">Черновики</h5>
+                        <h2 class="display-4">{{ draft_conferences }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительная статистика -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>{{ total_views }}</h3>
+                        <p class="text-muted">Всего просмотров</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>{{ total_applications }}</h3>
+                        <p class="text-muted">Всего заявок</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3>{{ new_applications }}</h3>
+                        <p class="text-muted">Новых заявок</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Две колонки: последние конференции и последние заявки -->
+        <div class="row">
+            <!-- Последние конференции -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Последние конференции</h5>
+                        <a href="{% url 'organizations:org_conferences' %}" class="btn btn-light btn-sm">Все →</a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_conferences %}
+                            <div class="list-group">
+                                {% for conf in recent_conferences %}
+                                    <a href="{% url 'organizations:edit_conference' conf.pk %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ conf.title|truncatechars:40 }}</h6>
+                                            <small class="text-muted">{{ conf.created_at|date:"d.m.Y" }}</small>
+                                        </div>
+                                        <p class="mb-1">
+                                            <span class="badge
+                                                {% if conf.status == 'published' %}bg-success
+                                                {% elif conf.status == 'pending' %}bg-warning
+                                                {% elif conf.status == 'draft' %}bg-secondary
+                                                {% else %}bg-danger{% endif %}">
+                                                {{ conf.get_status_display }}
+                                            </span>
+                                            <small class="text-muted ms-2">
+                                                {{ conf.start_date|date:"d.m.Y" }} - {{ conf.end_date|date:"d.m.Y" }}
+                                            </small>
+                                        </p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">У вас пока нет конференций</p>
+                            <a href="{% url 'organizations:create_conference' %}" class="btn btn-primary btn-sm">
+                                Создать первую конференцию
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Последние заявки -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Последние заявки</h5>
+                        <a href="{% url 'organizations:org_applications' %}" class="btn btn-light btn-sm">Все →</a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_applications %}
+                            <div class="list-group">
+                                {% for app in recent_applications %}
+                                    <a href="{% url 'organizations:application_detail' app.pk %}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">{{ app.full_name }}</h6>
+                                            <small class="text-muted">{{ app.created_at|date:"d.m.Y" }}</small>
+                                        </div>
+                                        <p class="mb-1">
+                                            <span class="badge
+                                                {% if app.status == 'new' %}bg-info
+                                                {% elif app.status == 'accepted' %}bg-success
+                                                {% elif app.status == 'rejected' %}bg-danger
+                                                {% elif app.status == 'under_review' %}bg-warning
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ app.get_status_display }}
+                                            </span>
+                                            <small class="text-muted ms-2">
+                                                {{ app.conference.title|truncatechars:30 }}
+                                            </small>
+                                        </p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">Пока нет заявок</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="card mt-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{% url 'organizations:create_conference' %}" class="btn btn-outline-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Создать<br>конференцию
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'organizations:org_applications' %}?status=new" class="btn btn-outline-warning w-100">
+                            <i class="bi bi-inbox"></i> Новые<br>заявки
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'organizations:org_conferences' %}?status=pending" class="btn btn-outline-info w-100">
+                            <i class="bi bi-hourglass-split"></i> На<br>модерации
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{% url 'organizations:organization_profile' %}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-pencil"></i> Редактировать<br>профиль
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

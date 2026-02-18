@@ -1,0 +1,92 @@
+<!-- templates/reports/generate.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Генерация отчёта{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-file-earmark-bar-graph"></i> Генерация нового отчёта</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Тип отчёта</label>
+                        <select name="report_type" class="form-select" id="reportType">
+                            <option value="conferences">По конференциям</option>
+                            <option value="applications">По заявкам</option>
+                            <option value="organizations">По организациям</option>
+                            <option value="users">По пользователям</option>
+                            <option value="statistics">Статистический</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Формат</label>
+                        <select name="format" class="form-select">
+                            <option value="excel">Excel</option>
+                            <option value="csv">CSV</option>
+                            <option value="pdf">PDF</option>
+                            <option value="json">JSON</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Название отчёта</label>
+                        <input type="text" name="title" class="form-control" value="Отчёт {% now 'd.m.Y' %}">
+                    </div>
+
+                    <hr>
+
+                    <div id="conferences-filters" class="filters-section">
+                        <h5>Фильтры для конференций</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Дата с</label>
+                                <input type="date" name="date_from" class="form-control">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Дата по</label>
+                                <input type="date" name="date_to" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Статус</label>
+                            <select name="status" class="form-select">
+                                <option value="">Все</option>
+                                {% for code, name in status_choices %}
+                                    <option value="{{ code }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3">
+                        <i class="bi bi-info-circle"></i> Функция генерации отчётов находится в разработке.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'reports:list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-file-earmark-bar-graph"></i> Сгенерировать
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('reportType').addEventListener('change', function() {
+    console.log('Тип отчёта изменён:', this.value);
+});
+</script>
+{% endblock %}

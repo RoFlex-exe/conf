@@ -1,0 +1,62 @@
+<!-- templates/organizations/edit_conference.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Редактирование конференции - {{ conference.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Заявки
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Редактирование конференции</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Та же структура, что и в create_conference.html -->
+                    <!-- ... (полностью аналогично форме создания) ... -->
+
+                    <!-- Только добавим предпросмотр текущего постера -->
+                    {% if conference.poster %}
+                        <div class="mb-3">
+                            <label class="form-label">Текущий постер</label><br>
+                            <img src="{{ conference.poster.url }}" alt="Постер" style="max-height: 150px;">
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'organizations:org_conferences' %}" class="btn btn-secondary">
+                            <i class="bi bi-x"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

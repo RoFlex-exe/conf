@@ -1,0 +1,320 @@
+<!-- templates/organizations/create_conference.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Создание конференции - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Заявки
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+            <a href="{% url 'organizations:create_conference' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-plus-circle"></i> + Создать конференцию
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Создание новой конференции</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <!-- Основная информация -->
+                    <h5 class="mt-3">1. Основная информация</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                                <div class="text-danger">{{ form.title.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.short_title.id_for_label }}" class="form-label">{{ form.short_title.label }}</label>
+                            {{ form.short_title }}
+                            {% if form.short_title.errors %}
+                                <div class="text-danger">{{ form.short_title.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.conference_type.id_for_label }}" class="form-label">{{ form.conference_type.label }}</label>
+                            {{ form.conference_type }}
+                            {% if form.conference_type.errors %}
+                                <div class="text-danger">{{ form.conference_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.format.id_for_label }}" class="form-label">{{ form.format.label }}</label>
+                            {{ form.format }}
+                            {% if form.format.errors %}
+                                <div class="text-danger">{{ form.format.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Даты -->
+                    <h5 class="mt-4">2. Даты проведения</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.start_date.id_for_label }}" class="form-label">{{ form.start_date.label }}</label>
+                            {{ form.start_date }}
+                            {% if form.start_date.errors %}
+                                <div class="text-danger">{{ form.start_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.end_date.id_for_label }}" class="form-label">{{ form.end_date.label }}</label>
+                            {{ form.end_date }}
+                            {% if form.end_date.errors %}
+                                <div class="text-danger">{{ form.end_date.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.deadline.id_for_label }}" class="form-label">{{ form.deadline.label }}</label>
+                            {{ form.deadline }}
+                            {% if form.deadline.errors %}
+                                <div class="text-danger">{{ form.deadline.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Место проведения -->
+                    <h5 class="mt-4">3. Место проведения</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.location.id_for_label }}" class="form-label">{{ form.location.label }}</label>
+                            {{ form.location }}
+                            {% if form.location.errors %}
+                                <div class="text-danger">{{ form.location.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.venue.id_for_label }}" class="form-label">{{ form.venue.label }}</label>
+                            {{ form.venue }}
+                            {% if form.venue.errors %}
+                                <div class="text-danger">{{ form.venue.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div class="text-danger">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.online_platform.id_for_label }}" class="form-label">{{ form.online_platform.label }}</label>
+                        {{ form.online_platform }}
+                        {% if form.online_platform.errors %}
+                            <div class="text-danger">{{ form.online_platform.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Для онлайн и гибридных конференций</div>
+                    </div>
+
+                    <!-- Описание -->
+                    <h5 class="mt-4">4. Описание и программа</h5>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.program.id_for_label }}" class="form-label">{{ form.program.label }}</label>
+                        {{ form.program }}
+                        {% if form.program.errors %}
+                            <div class="text-danger">{{ form.program.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.requirements.id_for_label }}" class="form-label">{{ form.requirements.label }}</label>
+                        {{ form.requirements }}
+                        {% if form.requirements.errors %}
+                            <div class="text-danger">{{ form.requirements.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.participation_terms.id_for_label }}" class="form-label">{{ form.participation_terms.label }}</label>
+                        {{ form.participation_terms }}
+                        {% if form.participation_terms.errors %}
+                            <div class="text-danger">{{ form.participation_terms.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Научные направления -->
+                    <h5 class="mt-4">5. Научные направления</h5>
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="{{ form.topics.id_for_label }}" class="form-label">{{ form.topics.label }}</label>
+                        {{ form.topics }}
+                        {% if form.topics.errors %}
+                            <div class="text-danger">{{ form.topics.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">{{ form.topics.help_text }}</div>
+                    </div>
+
+                    <!-- Контактная информация -->
+                    <h5 class="mt-4">6. Контактная информация</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.contact_email.id_for_label }}" class="form-label">{{ form.contact_email.label }}</label>
+                            {{ form.contact_email }}
+                            {% if form.contact_email.errors %}
+                                <div class="text-danger">{{ form.contact_email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.contact_phone.id_for_label }}" class="form-label">{{ form.contact_phone.label }}</label>
+                            {{ form.contact_phone }}
+                            {% if form.contact_phone.errors %}
+                                <div class="text-danger">{{ form.contact_phone.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.contact_person.id_for_label }}" class="form-label">{{ form.contact_person.label }}</label>
+                        {{ form.contact_person }}
+                        {% if form.contact_person.errors %}
+                            <div class="text-danger">{{ form.contact_person.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Ссылки -->
+                    <h5 class="mt-4">7. Ссылки и материалы</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.website.id_for_label }}" class="form-label">{{ form.website.label }}</label>
+                            {{ form.website }}
+                            {% if form.website.errors %}
+                                <div class="text-danger">{{ form.website.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.call_for_papers.id_for_label }}" class="form-label">{{ form.call_for_papers.label }}</label>
+                            {{ form.call_for_papers }}
+                            {% if form.call_for_papers.errors %}
+                                <div class="text-danger">{{ form.call_for_papers.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.poster.id_for_label }}" class="form-label">{{ form.poster.label }}</label>
+                        {{ form.poster }}
+                        {% if form.poster.errors %}
+                            <div class="text-danger">{{ form.poster.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">{{ form.poster.help_text }}</div>
+                    </div>
+
+                    <!-- Дополнительные опции -->
+                    <h5 class="mt-4">8. Дополнительные опции</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_featured }}
+                                <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                                    {{ form.is_featured.label }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.is_free }}
+                                <label class="form-check-label" for="{{ form.is_free.id_for_label }}">
+                                    {{ form.is_free.label }}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check">
+                                {{ form.has_publications }}
+                                <label class="form-check-label" for="{{ form.has_publications.id_for_label }}">
+                                    {{ form.has_publications.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.publication_indexing.id_for_label }}" class="form-label">{{ form.publication_indexing.label }}</label>
+                        {{ form.publication_indexing }}
+                        {% if form.publication_indexing.errors %}
+                            <div class="text-danger">{{ form.publication_indexing.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{% url 'organizations:org_conferences' %}" class="btn btn-secondary">
+                            <i class="bi bi-x"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Создать конференцию
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

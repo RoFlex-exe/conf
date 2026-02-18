@@ -1,0 +1,133 @@
+<!-- templates/organizations/profile.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Профиль организации - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if organization.logo %}
+                    <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 100px;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 100px; height: 100px;">
+                        <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                    </div>
+                {% endif %}
+                <h5>{{ organization.name }}</h5>
+
+                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
+                </a>
+            </div>
+        </div>
+
+        <div class="list-group mt-3">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Заявки
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Профиль организации</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            {% if organization.logo %}
+                                <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 150px;">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3" style="height: 150px;">
+                                    <span class="display-4">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                                </div>
+                            {% endif %}
+                            <label for="logo" class="form-label">Изменить логотип</label>
+                            <input type="file" name="logo" class="form-control form-control-sm" accept="image/*">
+                        </div>
+
+                        <div class="col-md-9">
+                            <div class="mb-3">
+                                <label class="form-label">Название организации</label>
+                                <input type="text" class="form-control" value="{{ organization.name }}" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">ИНН</label>
+                                <input type="text" class="form-control" value="{{ organization.inn }}" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Юридический адрес</label>
+                                <textarea class="form-control" rows="2" readonly>{{ organization.legal_address }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4">Контактная информация для конференций</h5>
+                    <hr>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_person" class="form-label">Контактное лицо</label>
+                            <input type="text" class="form-control" id="contact_person" name="contact_person" value="{{ organization.contact_person }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_position" class="form-label">Должность</label>
+                            <input type="text" class="form-control" id="contact_position" name="contact_position" value="{{ organization.contact_position }}">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_email" class="form-label">Email для связи</label>
+                            <input type="email" class="form-control" id="contact_email" name="contact_email" value="{{ organization.contact_email }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="contact_phone" class="form-label">Телефон</label>
+                            <input type="text" class="form-control" id="contact_phone" name="contact_phone" value="{{ organization.contact_phone }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="website" class="form-label">Сайт организации</label>
+                        <input type="url" class="form-control" id="website" name="website" value="{{ organization.website }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Описание организации</label>
+                        <textarea class="form-control" id="description" name="description" rows="5">{{ organization.description }}</textarea>
+                        <div class="form-text">Это описание будет отображаться на странице организации</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+<!-- templates/organizations/applications.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заявки - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if organization.logo %}
+                    <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 100px;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 100px; height: 100px;">
+                        <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                    </div>
+                {% endif %}
+                <h5>{{ organization.name }}</h5>
+
+                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
+                </a>
+            </div>
+        </div>
+
+        <div class="list-group mt-3">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-people"></i> Заявки
+                <span class="badge bg-primary rounded-pill float-end">{{ applications.paginator.count }}</span>
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-people"></i> Заявки на участие</h4>
+                <span class="badge bg-light text-dark">Всего: {{ applications.paginator.count }}</span>
+            </div>
+            <div class="card-body">
+                <!-- Фильтры -->
+                <form method="get" class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <input type="text" name="q" class="form-control" placeholder="Поиск по имени или email" value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <select name="status" class="form-select">
+                            <option value="all" {% if current_status == 'all' %}selected{% endif %}>Все статусы</option>
+                            <option value="new" {% if current_status == 'new' %}selected{% endif %}>Новые ({{ status_counts.new }})</option>
+                            <option value="under_review" {% if current_status == 'under_review' %}selected{% endif %}>На рассмотрении ({{ status_counts.under_review }})</option>
+                            <option value="accepted" {% if current_status == 'accepted' %}selected{% endif %}>Принятые ({{ status_counts.accepted }})</option>
+                            <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Отклонённые ({{ status_counts.rejected }})</option>
+                            <option value="confirmed" {% if current_status == 'confirmed' %}selected{% endif %}>Подтверждённые ({{ status_counts.confirmed }})</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="conference" class="form-select">
+                            <option value="">Все конференции</option>
+                            {% for conf in conferences %}
+                                <option value="{{ conf.id }}" {% if current_conference == conf.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ conf.title|truncatechars:30 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">Применить</button>
+                    </div>
+                </form>
+
+                <!-- Список заявок -->
+                {% if applications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ФИО</th>
+                                    <th>Конференция</th>
+                                    <th>Тема доклада</th>
+                                    <th>Дата подачи</th>
+                                    <th>Статус</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for app in applications %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ app.full_name }}</strong><br>
+                                            <small class="text-muted">{{ app.email }}</small>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'conferences:conference_detail' app.conference.slug %}">
+                                                {{ app.conference.title|truncatechars:40 }}
+                                            </a>
+                                        </td>
+                                        <td>{{ app.presentation_title|truncatechars:30 }}</td>
+                                        <td>{{ app.created_at|date:"d.m.Y" }}</td>
+                                        <td>
+                                            <span class="badge
+                                                {% if app.status == 'new' %}bg-info
+                                                {% elif app.status == 'under_review' %}bg-warning
+                                                {% elif app.status == 'accepted' %}bg-success
+                                                {% elif app.status == 'rejected' %}bg-danger
+                                                {% elif app.status == 'confirmed' %}bg-primary
+                                                {% else %}bg-secondary{% endif %}">
+                                                {{ app.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'organizations:application_detail' app.pk %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Пагинация -->
+                    {% if applications.has_other_pages %}
+                        <nav aria-label="Page navigation" class="mt-4">
+                            <ul class="pagination justify-content-center">
+                                {% if applications.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ applications.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status != 'all' %}&status={{ current_status }}{% endif %}{% if current_conference %}&conference={{ current_conference }}{% endif %}">
+                                            &laquo;
+                                        </a>
+                                    </li>
+                                {% endif %}
+
+                                {% for i in applications.paginator.page_range %}
+                                    {% if applications.number == i %}
+                                        <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                                    {% else %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ i }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status != 'all' %}&status={{ current_status }}{% endif %}{% if current_conference %}&conference={{ current_conference }}{% endif %}">
+                                                {{ i }}
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if applications.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ applications.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if current_status != 'all' %}&status={{ current_status }}{% endif %}{% if current_conference %}&conference={{ current_conference }}{% endif %}">
+                                            &raquo;
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Пока нет заявок на участие в конференциях.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

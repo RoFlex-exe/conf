@@ -1,0 +1,265 @@
+<!-- templates/organizations/statistics.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Статистика - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if organization.logo %}
+                    <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 100px;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 100px; height: 100px;">
+                        <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                    </div>
+                {% endif %}
+                <h5>{{ organization.name }}</h5>
+
+                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
+                </a>
+            </div>
+        </div>
+
+        <div class="list-group mt-3">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-people"></i> Заявки
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-graph-up"></i> Статистика конференций</h4>
+            </div>
+            <div class="card-body">
+                <!-- Общая статистика -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-white bg-primary">
+                            <div class="card-body text-center">
+                                <h3>{{ total_conferences }}</h3>
+                                <p class="mb-0">Конференций</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-success">
+                            <div class="card-body text-center">
+                                <h3>{{ total_views }}</h3>
+                                <p class="mb-0">Просмотров</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-info">
+                            <div class="card-body text-center">
+                                <h3>{{ total_applications }}</h3>
+                                <p class="mb-0">Заявок</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-white bg-warning">
+                            <div class="card-body text-center">
+                                <h3>{{ total_favorites }}</h3>
+                                <p class="mb-0">В избранном</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Средние показатели -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Средние показатели</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><strong>Среднее число просмотров:</strong> {{ avg_views }} на конференцию</p>
+                                <p><strong>Среднее число заявок:</strong> {{ avg_applications }} на конференцию</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Статусы конференций</h5>
+                            </div>
+                            <div class="card-body">
+                                <p><span class="badge bg-success">Опубликовано:</span> {{ status_stats.published }}</p>
+                                <p><span class="badge bg-warning">На модерации:</span> {{ status_stats.pending }}</p>
+                                <p><span class="badge bg-secondary">Черновики:</span> {{ status_stats.draft }}</p>
+                                <p><span class="badge bg-info">В архиве:</span> {{ status_stats.archived }}</p>
+                                <p><span class="badge bg-danger">Отклонено:</span> {{ status_stats.rejected }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Типы и форматы -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Типы конференций</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group">
+                                    {% for type_name, count in type_stats.items %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ type_name }}
+                                            <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Нет данных</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5>Форматы проведения</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group">
+                                    {% for format_name, count in format_stats.items %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ format_name }}
+                                            <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Нет данных</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Топ конференций -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">По просмотрам</h5>
+                            </div>
+                            <div class="card-body">
+                                <ol class="list-group list-group-numbered">
+                                    {% for conf in top_by_views %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="fw-bold">{{ conf.title|truncatechars:30 }}</div>
+                                                <small class="text-muted">{{ conf.start_date|date:"Y" }}</small>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ conf.view_count }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Нет данных</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0">По избранному</h5>
+                            </div>
+                            <div class="card-body">
+                                <ol class="list-group list-group-numbered">
+                                    {% for conf in top_by_favorites %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="fw-bold">{{ conf.title|truncatechars:30 }}</div>
+                                                <small class="text-muted">{{ conf.start_date|date:"Y" }}</small>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ conf.favorites_count }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Нет данных</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0">По заявкам</h5>
+                            </div>
+                            <div class="card-body">
+                                <ol class="list-group list-group-numbered">
+                                    {% for conf in top_by_applications %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="fw-bold">{{ conf.title|truncatechars:30 }}</div>
+                                                <small class="text-muted">{{ conf.start_date|date:"Y" }}</small>
+                                            </div>
+                                            <span class="badge bg-primary rounded-pill">{{ conf.applications_count }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">Нет данных</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Популярные тематики -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Популярные тематики</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% for topic_name, count in topic_stats %}
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        {{ topic_name }}
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {% widthratio count total_conferences 100 %}%"
+                                                 aria-valuenow="{% widthratio count total_conferences 100 %}"
+                                                 aria-valuemin="0" aria-valuemax="100">
+                                                {{ count }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% empty %}
+                                <p class="text-muted">Нет данных</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,159 @@
+<!-- templates/organizations/application_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Заявка {{ application.full_name }} - {{ application.conference.title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-speedometer2"></i> Обзор
+            </a>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-calendar-event"></i> Мои конференции
+            </a>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action active">
+                <i class="bi bi-people"></i> Заявки
+            </a>
+            <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-graph-up"></i> Статистика
+            </a>
+            <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
+                <i class="bi bi-building"></i> Профиль организации
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Детали заявки</h4>
+                <a href="{% url 'organizations:org_applications' %}" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left"></i> Назад к списку
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Информация об участнике</h5>
+                        <table class="table table-bordered">
+                            <tr>
+                                <th style="width: 40%;">ФИО</th>
+                                <td>{{ application.full_name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email</th>
+                                <td><a href="mailto:{{ application.email }}">{{ application.email }}</a></td>
+                            </tr>
+                            <tr>
+                                <th>Место работы/учебы</th>
+                                <td>{{ application.organization|default:"—" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Ученая степень</th>
+                                <td>{{ application.academic_degree|default:"—" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5>Информация о конференции</h5>
+                        <table class="table table-bordered">
+                            <tr>
+                                <th style="width: 40%;">Конференция</th>
+                                <td>
+                                    <a href="{% url 'conferences:conference_detail' application.conference.slug %}">
+                                        {{ application.conference.title }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Организатор</th>
+                                <td>{{ application.conference.organization.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Даты проведения</th>
+                                <td>{{ application.conference.start_date|date:"d.m.Y" }} - {{ application.conference.end_date|date:"d.m.Y" }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <h5 class="mt-4">Информация о докладе</h5>
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width: 20%;">Тема доклада</th>
+                        <td>{{ application.presentation_title }}</td>
+                    </tr>
+                    <tr>
+                        <th>Тип доклада</th>
+                        <td>{{ application.get_presentation_type_display }}</td>
+                    </tr>
+                    {% if application.abstract %}
+                        <tr>
+                            <th>Файл с тезисами</th>
+                            <td>
+                                <a href="{{ application.abstract.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-file-earmark"></i> Скачать файл
+                                </a>
+                            </td>
+                        </tr>
+                    {% endif %}
+                    {% if application.abstract_text %}
+                        <tr>
+                            <th>Текст тезисов</th>
+                            <td>{{ application.abstract_text|linebreaks }}</td>
+                        </tr>
+                    {% endif %}
+                    {% if application.comment %}
+                        <tr>
+                            <th>Комментарий</th>
+                            <td>{{ application.comment|linebreaks }}</td>
+                        </tr>
+                    {% endif %}
+                </table>
+
+                <!-- Управление статусом -->
+                <div class="card mt-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Управление статусом заявки</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label">Статус</label>
+                                    {{ form.status }}
+                                </div>
+                                <div class="col-md-8 mb-3">
+                                    <label for="{{ form.organizer_comment.id_for_label }}" class="form-label">Комментарий для участника</label>
+                                    {{ form.organizer_comment }}
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-check"></i> Обновить статус
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- История изменений -->
+                <div class="mt-4">
+                    <h5>Информация о заявке</h5>
+                    <p class="text-muted">
+                        <small>
+                            Создана: {{ application.created_at|date:"d.m.Y H:i" }}<br>
+                            Последнее обновление: {{ application.updated_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

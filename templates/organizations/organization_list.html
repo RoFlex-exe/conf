@@ -1,0 +1,132 @@
+<!-- templates/organizations/organization_list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Организации - организаторы конференций{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <!-- Заголовок -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Организации-организаторы</h1>
+            <div class="text-muted">
+                Всего организаций: {{ total_organizations }}
+            </div>
+        </div>
+
+        <!-- Поисковая строка -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-10">
+                        <input type="text" name="q" class="form-control form-control-lg"
+                               placeholder="Поиск организаций по названию..."
+                               value="{{ request.GET.q }}">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary btn-lg w-100">Найти</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Список организаций -->
+        <div class="row">
+            {% for organization in organizations %}
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        {% if organization.logo %}
+                            <img src="{{ organization.logo.url }}" class="card-img-top" alt="{{ organization.name }}" style="height: 200px; object-fit: contain; padding: 20px;">
+                        {% else %}
+                            <div class="text-center p-4 bg-light" style="height: 200px; display: flex; align-items: center; justify-content: center;">
+                                <span class="display-1">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="text-decoration-none">
+                                    {{ organization.short_name|default:organization.name }}
+                                </a>
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ organization.name|truncatechars:60 }}</h6>
+
+                            <p class="card-text">
+                                <i class="bi bi-geo-alt"></i> {{ organization.legal_address|truncatechars:50 }}<br>
+                                <i class="bi bi-envelope"></i> {{ organization.contact_email }}<br>
+                                <i class="bi bi-telephone"></i> {{ organization.contact_phone }}
+                            </p>
+
+                            {% if organization.website %}
+                                <a href="{{ organization.website }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-globe"></i> Сайт
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>
+                                Конференций: {{ organization.conferences.count }} |
+                                Зарегистрирована: {{ organization.created_at|date:"Y" }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        {% if request.GET.q %}
+                            По запросу "{{ request.GET.q }}" ничего не найдено.
+                            <a href="{% url 'organizations:organization_list' %}" class="alert-link">Сбросить поиск</a>
+                        {% else %}
+                            Пока нет зарегистрированных организаций.
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if organizations.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if organizations.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ organizations.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                &laquo; Предыдущая
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">&laquo; Предыдущая</span>
+                        </li>
+                    {% endif %}
+
+                    {% for i in organizations.paginator.page_range %}
+                        {% if organizations.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">{{ i }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if organizations.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ organizations.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}">
+                                Следующая &raquo;
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">Следующая &raquo;</span>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

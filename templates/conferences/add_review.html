@@ -1,0 +1,93 @@
+<!-- templates/conferences/add_review.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Оставить отзыв - {{ conference.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Хлебные крошки -->
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_list' %}">Конференции</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_detail' conference.slug %}">{{ conference.title|truncatechars:50 }}</a></li>
+                <li class="breadcrumb-item active">Оставить отзыв</li>
+            </ol>
+        </nav>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Оставить отзыв о конференции</h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5>{{ conference.title }}</h5>
+                    <p class="mb-0">
+                        <strong>Организатор:</strong> {{ conference.organization.name }}<br>
+                        <strong>Даты проведения:</strong> {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.rating.id_for_label }}" class="form-label">Оценка *</label>
+                        {{ form.rating }}
+                        {% if form.rating.errors %}
+                            <div class="text-danger">{{ form.rating.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Оцените конференцию от 1 до 5 звёзд</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label">Заголовок отзыва</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                            <div class="text-danger">{{ form.title.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Краткое описание вашего впечатления (необязательно)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.text.id_for_label }}" class="form-label">Текст отзыва *</label>
+                        {{ form.text }}
+                        {% if form.text.errors %}
+                            <div class="text-danger">{{ form.text.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Поделитесь своими впечатлениями о конференции</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.pros.id_for_label }}" class="form-label">Что понравилось</label>
+                        {{ form.pros }}
+                        {% if form.pros.errors %}
+                            <div class="text-danger">{{ form.pros.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Отметьте сильные стороны конференции</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.cons.id_for_label }}" class="form-label">Что можно улучшить</label>
+                        {{ form.cons }}
+                        {% if form.cons.errors %}
+                            <div class="text-danger">{{ form.cons.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Ваши предложения по улучшению</div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'conferences:conference_detail' conference.slug %}" class="btn btn-secondary">
+                            <i class="bi bi-x"></i> Отмена
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check"></i> Отправить отзыв
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

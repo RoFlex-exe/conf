@@ -1,0 +1,136 @@
+<!-- templates/admin/base_site.html -->
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | Администрирование ConfPromo{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    :root {
+        --primary: #0d6efd;
+        --secondary: #0a58ca;
+        --accent: #0dcaf0;
+        --dark: #212529;
+    }
+
+    #header {
+        background: var(--primary);
+        color: white;
+    }
+
+    #branding h1 {
+        color: white;
+        font-weight: 600;
+    }
+
+    #branding h1 a {
+        color: white;
+        text-decoration: none;
+    }
+
+    .module h2, .module caption {
+        background: var(--secondary);
+    }
+
+    div.breadcrumbs {
+        background: var(--dark);
+    }
+
+    .button, input[type=submit], input[type=button], .submit-row input {
+        background: var(--primary);
+    }
+
+    .button:hover, input[type=submit]:hover, input[type=button]:hover {
+        background: var(--secondary);
+    }
+
+    .button.default {
+        background: var(--accent);
+    }
+
+    .dashboard .module table th a {
+        color: var(--primary);
+    }
+
+    .dashboard #content {
+        max-width: 1600px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+    .stat-card h3 {
+        margin: 10px 0;
+        font-size: 2em;
+        color: var(--primary);
+    }
+
+    .stat-card p {
+        color: #666;
+        margin: 0;
+    }
+
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .quick-actions a {
+        display: block;
+        padding: 15px;
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--primary);
+        text-align: center;
+        transition: all 0.3s;
+    }
+
+    .quick-actions a:hover {
+        background: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block welcome-msg %}
+    Добро пожаловать, <strong>{% firstof user.get_short_name user.get_username %}</strong>!
+{% endblock %}
+
+{% block userlinks %}
+    <a href="{% url 'admin:index' %}">Панель управления</a> /
+    <a href="{% url 'admin:password_change' %}">Сменить пароль</a> /
+    <a href="{% url 'admin:logout' %}">Выйти</a>
+{% endblock %}
+
+{% block nav-global %}
+<div style="float: right; margin-right: 20px;">
+    <a href="{% url 'home' %}" style="color: white; text-decoration: none; margin-right: 15px;">
+        <i class="bi bi-house"></i> На сайт
+    </a>
+    <a href="{% url 'admin:conferences_conference_changelist' %}?status__exact=pending"
+       style="color: white; text-decoration: none; margin-right: 15px;">
+        <i class="bi bi-hourglass-split"></i> Модерация
+        {% with pending_count=conferences_pending.count %}
+            {% if pending_count %}
+                <span class="badge bg-warning">{{ pending_count }}</span>
+            {% endif %}
+        {% endwith %}
+    </a>
+    <!-- В блок nav-global добавьте -->
+    <a href="{% url 'reports:list' %}" style="color: white; text-decoration: none; margin-right: 15px;">
+        <i class="bi bi-file-earmark-bar-graph"></i> Отчёты
+    </a>
+</div>
+{% endblock %}

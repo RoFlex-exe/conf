@@ -1,0 +1,87 @@
+<!-- templates/users/profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Мой профиль{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="list-group">
+            <a href="{% url 'profile' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+                <i class="bi bi-person"></i> Профиль
+            </a>
+            <a href="{% url 'favorites' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
+                <i class="bi bi-star"></i> Избранное
+            </a>
+            <a href="{% url 'conferences:my_applications' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'my_applications' %}active{% endif %}">
+                <i class="bi bi-send"></i> Мои заявки
+            </a>
+            <a href="{% url 'notifications:list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+                <i class="bi bi-bell"></i> Уведомления
+                {% if unread_count %}
+                    <span class="badge bg-danger rounded-pill float-end">{{ unread_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'notifications:settings' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'settings' %}active{% endif %}">
+                <i class="bi bi-gear"></i> Настройки
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Редактирование профиля</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">Фамилия</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">Имя</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="{{ form.middle_name.id_for_label }}" class="form-label">Отчество</label>
+                            {{ form.middle_name }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                        {{ form.email }}
+                        {% if not user.email_verified %}
+                            <small class="text-warning">Email не подтвержден</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.affiliation.id_for_label }}" class="form-label">Место работы/учебы</label>  <!-- Изменили здесь -->
+                        {{ form.affiliation }}  <!-- Изменили здесь -->
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.academic_degree.id_for_label }}" class="form-label">Статус/степень</label>
+                        {{ form.academic_degree }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.interests.id_for_label }}" class="form-label">Научные интересы</label>
+                        {{ form.interests }}
+                        <div class="form-text">Выберите тематики, которые вас интересуют (можно несколько)</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

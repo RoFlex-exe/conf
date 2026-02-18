@@ -1,0 +1,37 @@
+<!-- templates/organizations/delete_conference.html -->
+{% extends 'base.html' %}
+
+{% block title %}Удаление конференции{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">Подтверждение удаления</h4>
+            </div>
+            <div class="card-body">
+                <p class="lead">Вы уверены, что хотите удалить конференцию?</p>
+                <p><strong>{{ conference.title }}</strong></p>
+                <p class="text-muted">Даты проведения: {{ conference.start_date|date:"d.m.Y" }} - {{ conference.end_date|date:"d.m.Y" }}</p>
+
+                {% if conference.applications_count > 0 %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Внимание! На эту конференцию подано {{ conference.applications_count }} заявок.
+                        При удалении все заявки будут также удалены.
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'organizations:org_conferences' %}" class="btn btn-secondary">Отмена</a>
+                        <button type="submit" class="btn btn-danger">Удалить</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
