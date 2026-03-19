@@ -29,12 +29,13 @@
             <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-speedometer2"></i> Обзор
             </a>
-            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action active">
-                <i class="bi bi-calendar-event"></i> Конференции ({{ organization.short_name }})
-                <span class="badge bg-primary rounded-pill float-end">{{ status_counts.all }}</span>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-event me-2"></i> Мероприятия ({{ organization.short_name }})</span>
+                <span class="badge bg-primary rounded-pill">{{ total_conferences }}</span>
             </a>
-            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-people"></i> Заявки
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i> Заявки</span>
+                <span class="badge bg-primary rounded-pill">{{ total_applications }}</span>
             </a>
             <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-graph-up"></i> Статистика
