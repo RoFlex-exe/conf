@@ -27,7 +27,7 @@ class CustomUserCreationForm(UserCreationForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Отчество (необязательно)'})
     )
-    affiliation = forms.CharField(  # Переименовали с organization на affiliation
+    affiliation = forms.CharField(
         max_length=255,
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Место работы/учебы'})
@@ -41,7 +41,7 @@ class CustomUserCreationForm(UserCreationForm):
             'first_name',
             'last_name',
             'middle_name',
-            'affiliation',  # Изменили здесь
+            'affiliation',
             'academic_degree',
             'password1',
             'password2'
@@ -69,17 +69,20 @@ class CustomUserChangeForm(UserChangeForm):
             'first_name',
             'last_name',
             'middle_name',
-            'affiliation',  # Изменили здесь
+            'affiliation',
             'academic_degree',
-            'interests'  # Добавили интересы
+            'interests'
         )
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field in self.fields:
-            self.fields[field].widget.attrs.update({'class': 'form-control'})
-        self.fields['academic_degree'].widget.attrs.update({'class': 'form-select'})
-        self.fields['interests'].widget.attrs.update({'class': 'form-select', 'multiple': True})
+        for field_name, field in self.fields.items():
+            if field_name == 'academic_degree':
+                field.widget.attrs.update({'class': 'form-select'})
+            elif field_name == 'interests':
+                field.widget.attrs.update({'class': 'form-select', 'multiple': True, 'size': 10})
+            else:
+                field.widget.attrs.update({'class': 'form-control'})
 
 
 class CustomLoginForm(AuthenticationForm):

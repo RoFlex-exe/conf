@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Скрипт для заполнения базы данных тестовыми данными.
+Скрипт для заполнения базы данных актуальными тестовыми данными.
+Основан на реальных научных мероприятиях 2026-2027 годов.
 Запуск: python populate_db.py
 """
 
@@ -16,6 +17,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf_promotion.settings')
 django.setup()
 
 # Импортируем модели
+from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from users.models import CustomUser
@@ -68,6 +70,9 @@ def create_topics():
         'Квантовая физика': 'quantum-physics',
         'Физика низких температур': 'low-temperature-physics',
         'Физика высоких энергий': 'high-energy-physics',
+        'Нелинейный анализ': 'nonlinear-analysis',
+        'Экстремальные задачи': 'extreme-problems',
+        'Синхротронное излучение': 'synchrotron-radiation',
 
         # Математика и информатика
         'Математика': 'mathematics',
@@ -76,19 +81,26 @@ def create_topics():
         'Искусственный интеллект': 'artificial-intelligence',
         'Суперкомпьютерные технологии': 'supercomputing',
         'Цифровизация': 'digitalization',
+        'Супервычисления': 'supercomputing-2026',
+        'Математическое моделирование': 'mathematical-modeling',
 
         # Науки о Земле
         'Науки о Земле': 'earth-sciences',
         'Геология': 'geology',
         'Геофизика': 'geophysics',
         'География': 'geography',
-        'Арктические исследования': 'arctic-research',
-        'Криосфера': 'cryosphere',
+        'Сейсмология': 'seismology',
+        'Сейсмическая безопасность': 'seismic-safety',
+        'Геология и минеральные ресурсы': 'geology-mineral-resources',
+        'Энергетика': 'energy',
+        'Возобновляемая энергетика': 'renewable-energy',
 
         # Биология и медицина
         'Биология': 'biology',
         'Молекулярная биология': 'molecular-biology',
         'Медицина': 'medicine',
+        'Медицинская химия': 'medicinal-chemistry',
+        'Микробиология': 'microbiology',
 
         # Химия и материаловедение
         'Химия': 'chemistry',
@@ -103,18 +115,25 @@ def create_topics():
         'Возобновляемая энергетика': 'renewable-energy',
         'Телекоммуникации': 'telecommunications',
         'Радиофотоника': 'radiophotonics',
+        'Космонавтика': 'cosmonautics',
+        'Авиация': 'aviation',
+        'Навигационные системы': 'navigation-systems',
+        'Управление летательными аппаратами': 'aircraft-control',
 
         # Гуманитарные науки
         'Гуманитарные науки': 'humanities',
         'Лингвистика': 'linguistics',
         'Образование': 'education',
         'Иностранные языки': 'foreign-languages',
+        'Социально-гуманитарные науки': 'social-humanities',
+        'Фронтирные территории': 'frontier-territories',
 
         # Экономика и финансы
         'Экономика': 'economics',
         'Финансы': 'finance',
         'Инвестиции': 'investments',
         'Устойчивое развитие': 'sustainable-development',
+        'Энергетическая политика': 'energy-policy',
     }
 
     # Данные тематик с указанием родителей
@@ -130,23 +149,30 @@ def create_topics():
         # Математика и информатика
         {'name': 'Математика', 'order': 20},
         {'name': 'Прикладная математика', 'parent': 'Математика', 'order': 21},
+        {'name': 'Нелинейный анализ', 'parent': 'Математика', 'order': 22},
+        {'name': 'Экстремальные задачи', 'parent': 'Математика', 'order': 23},
         {'name': 'Информатика', 'order': 30},
         {'name': 'Искусственный интеллект', 'parent': 'Информатика', 'order': 31},
         {'name': 'Суперкомпьютерные технологии', 'parent': 'Информатика', 'order': 32},
-        {'name': 'Цифровизация', 'parent': 'Информатика', 'order': 33},
+        {'name': 'Супервычисления', 'parent': 'Информатика', 'order': 33},
+        {'name': 'Математическое моделирование', 'parent': 'Информатика', 'order': 34},
+        {'name': 'Цифровизация', 'parent': 'Информатика', 'order': 35},
 
         # Науки о Земле
         {'name': 'Науки о Земле', 'order': 40},
         {'name': 'Геология', 'parent': 'Науки о Земле', 'order': 41},
         {'name': 'Геофизика', 'parent': 'Науки о Земле', 'order': 42},
         {'name': 'География', 'parent': 'Науки о Земле', 'order': 43},
-        {'name': 'Арктические исследования', 'parent': 'Науки о Земле', 'order': 44},
-        {'name': 'Криосфера', 'parent': 'Науки о Земле', 'order': 45},
+        {'name': 'Сейсмология', 'parent': 'Науки о Земле', 'order': 44},
+        {'name': 'Сейсмическая безопасность', 'parent': 'Науки о Земле', 'order': 45},
+        {'name': 'Геология и минеральные ресурсы', 'parent': 'Науки о Земле', 'order': 46},
 
         # Биология и медицина
         {'name': 'Биология', 'order': 50},
         {'name': 'Молекулярная биология', 'parent': 'Биология', 'order': 51},
+        {'name': 'Микробиология', 'parent': 'Биология', 'order': 52},
         {'name': 'Медицина', 'order': 60},
+        {'name': 'Медицинская химия', 'parent': 'Медицина', 'order': 61},
 
         # Химия и материаловедение
         {'name': 'Химия', 'order': 70},
@@ -159,27 +185,33 @@ def create_topics():
         {'name': 'Технические науки', 'order': 90},
         {'name': 'Энергетика', 'parent': 'Технические науки', 'order': 91},
         {'name': 'Возобновляемая энергетика', 'parent': 'Энергетика', 'order': 92},
-        {'name': 'Телекоммуникации', 'parent': 'Технические науки', 'order': 93},
-        {'name': 'Радиофотоника', 'parent': 'Технические науки', 'order': 94},
+        {'name': 'Энергетическая политика', 'parent': 'Энергетика', 'order': 93},
+        {'name': 'Телекоммуникации', 'parent': 'Технические науки', 'order': 94},
+        {'name': 'Радиофотоника', 'parent': 'Технические науки', 'order': 95},
+        {'name': 'Космонавтика', 'order': 100},
+        {'name': 'Авиация', 'order': 110},
+        {'name': 'Навигационные системы', 'parent': 'Технические науки', 'order': 111},
+        {'name': 'Управление летательными аппаратами', 'parent': 'Технические науки', 'order': 112},
 
         # Гуманитарные науки
-        {'name': 'Гуманитарные науки', 'order': 100},
-        {'name': 'Лингвистика', 'parent': 'Гуманитарные науки', 'order': 101},
-        {'name': 'Образование', 'parent': 'Гуманитарные науки', 'order': 102},
-        {'name': 'Иностранные языки', 'parent': 'Лингвистика', 'order': 103},
+        {'name': 'Гуманитарные науки', 'order': 120},
+        {'name': 'Лингвистика', 'parent': 'Гуманитарные науки', 'order': 121},
+        {'name': 'Образование', 'parent': 'Гуманитарные науки', 'order': 122},
+        {'name': 'Иностранные языки', 'parent': 'Лингвистика', 'order': 123},
+        {'name': 'Социально-гуманитарные науки', 'parent': 'Гуманитарные науки', 'order': 124},
+        {'name': 'Фронтирные территории', 'parent': 'Гуманитарные науки', 'order': 125},
 
         # Экономика и финансы
-        {'name': 'Экономика', 'order': 110},
-        {'name': 'Финансы', 'parent': 'Экономика', 'order': 111},
-        {'name': 'Инвестиции', 'parent': 'Экономика', 'order': 112},
-        {'name': 'Устойчивое развитие', 'parent': 'Экономика', 'order': 113},
+        {'name': 'Экономика', 'order': 130},
+        {'name': 'Финансы', 'parent': 'Экономика', 'order': 131},
+        {'name': 'Инвестиции', 'parent': 'Экономика', 'order': 132},
+        {'name': 'Устойчивое развитие', 'parent': 'Экономика', 'order': 133},
     ]
 
     # Сначала создадим все тематики без родителей
     topics_dict = {}
     for topic_data in topics_data:
         if 'parent' not in topic_data:
-            # Получаем slug из словаря или генерируем
             topic_name = topic_data['name']
             slug = TOPIC_SLUGS.get(topic_name, slugify(topic_name))
 
@@ -192,7 +224,6 @@ def create_topics():
                 }
             )
 
-            # Если тематика уже существует, но slug неправильный - обновляем
             if not created and topic.slug != slug:
                 old_slug = topic.slug
                 topic.slug = slug
@@ -223,7 +254,6 @@ def create_topics():
                     }
                 )
 
-                # Если тематика уже существует, но slug неправильный - обновляем
                 if not created and (topic.slug != slug or topic.parent != parent):
                     old_slug = topic.slug
                     topic.slug = slug
@@ -251,7 +281,6 @@ def check_topic_slugs():
             print(f"❌ {topic.name}: '{topic.slug}' - содержит недопустимые символы!")
             all_ok = False
 
-    # Проверка на дубликаты
     slugs = {}
     for topic in Topic.objects.all():
         if topic.slug in slugs:
@@ -273,7 +302,7 @@ def create_organizations_and_users():
     print_header("СОЗДАНИЕ ОРГАНИЗАЦИЙ")
 
     organizations_data = [
-        # МГУ
+        # МГУ им. М.В. Ломоносова
         {
             'username': 'msu_org',
             'password': 'MsuOrg2024!',
@@ -294,7 +323,7 @@ def create_organizations_and_users():
                 'contact_email': 'conferences@msu.ru',
                 'contact_phone': '+7 (495) 939-10-00',
                 'website': 'https://www.msu.ru',
-                'description': 'МГУ имени М.В. Ломоносова — крупнейший классический университет Российской Федерации, один из центров отечественной науки и культуры. В университете регулярно проводятся международные и всероссийские научные конференции по самым разным направлениям.',
+                'description': 'МГУ имени М.В. Ломоносова — крупнейший классический университет Российской Федерации, один из центров отечественной науки и культуры.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -320,7 +349,7 @@ def create_organizations_and_users():
                 'contact_email': 'science@spbu.ru',
                 'contact_phone': '+7 (812) 328-20-00',
                 'website': 'https://spbu.ru',
-                'description': 'СПбГУ — старейший университет России, основанный в 1724 году. Проводит широкий спектр научных мероприятий, включая знаменитую Беломорскую студенческую научную сессию.',
+                'description': 'СПбГУ — старейший университет России, основанный в 1724 году. Проводит широкий спектр научных мероприятий.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -346,7 +375,7 @@ def create_organizations_and_users():
                 'contact_email': 'science@mipt.ru',
                 'contact_phone': '+7 (495) 408-45-54',
                 'website': 'https://mipt.ru',
-                'description': 'МФТИ — ведущий технический вуз России, готовящий специалистов в области теоретической и экспериментальной физики, математики и информатики. Проводит конференции по функциональным материалам и квантовой электронике.',
+                'description': 'МФТИ — ведущий технический вуз России, готовящий специалистов в области теоретической и экспериментальной физики, математики и информатики.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -372,7 +401,7 @@ def create_organizations_and_users():
                 'contact_email': 'science.conf@mephi.ru',
                 'contact_phone': '+7 (495) 788-56-99',
                 'website': 'https://mephi.ru',
-                'description': 'НИЯУ МИФИ — один из ведущих технических университетов России, специализирующийся на ядерной физике, информационных технологиях и материаловедении. Организует конференцию "Финатлон форум" по финансовым технологиям.',
+                'description': 'НИЯУ МИФИ — один из ведущих технических университетов России, специализирующийся на ядерной физике, информационных технологиях и материаловедении.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -398,45 +427,19 @@ def create_organizations_and_users():
                 'contact_email': 'conferences@mail.ioffe.ru',
                 'contact_phone': '+7 (812) 297-22-45',
                 'website': 'https://www.ioffe.ru',
-                'description': 'ФТИ им. А.Ф. Иоффе — один из крупнейших научно-исследовательских институтов России в области физики. Проводит множество конференций по физике полупроводников, сегнетоэлектриков, люминесценции и наноуглероду.',
+                'description': 'ФТИ им. А.Ф. Иоффе — один из крупнейших научно-исследовательских институтов России в области физики.',
                 'is_active': True,
                 'is_verified': True,
             }
         },
-        # ИФВЭ (Протвино)
-        {
-            'username': 'ihep_org',
-            'password': 'IhepOrg2024!',
-            'user_data': {
-                'email': 'science@ihep.ru',
-                'first_name': 'Николай',
-                'last_name': 'Тюрин',
-                'affiliation': 'ИФВЭ',
-            },
-            'org_data': {
-                'name': 'Институт физики высоких энергий имени А.А. Логунова НИЦ «Курчатовский институт»',
-                'short_name': 'ИФВЭ',
-                'inn': '5037012345',
-                'kpp': '503701001',
-                'legal_address': '142281, Московская обл., г. Протвино, пл. Науки, д. 1',
-                'contact_person': 'Тюрин Николай Евгеньевич',
-                'contact_position': 'Председатель оргкомитета',
-                'contact_email': 'science@ihep.ru',
-                'contact_phone': '+7 (4967) 74-20-20',
-                'website': 'https://www.ihep.ru',
-                'description': 'ИФВЭ — ведущий российский центр в области физики высоких энергий. На базе ускорительного комплекса У-70 проводит конференции по физике частиц при средних и высоких энергиях.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-        # ОИВТ РАН
+        # ОИВТ РАН (Объединенный институт высоких температур)
         {
             'username': 'jiht_org',
             'password': 'JihtOrg2024!',
             'user_data': {
                 'email': 'conferences@jiht.ru',
                 'first_name': 'Владимир',
-                'last_name': 'Фортов',
+                'last_name': 'Петров',
                 'affiliation': 'ОИВТ РАН',
             },
             'org_data': {
@@ -445,12 +448,12 @@ def create_organizations_and_users():
                 'inn': '7728012345',
                 'kpp': '772801001',
                 'legal_address': '125412, г. Москва, ул. Ижорская, д. 13, стр. 2',
-                'contact_person': 'Фортов Владимир Евгеньевич',
-                'contact_position': 'Научный руководитель',
+                'contact_person': 'Петров Владимир Сергеевич',
+                'contact_position': 'Учёный секретарь',
                 'contact_email': 'conferences@jiht.ru',
                 'contact_phone': '+7 (495) 484-23-33',
-                'website': 'https://jiht.ru',
-                'description': 'ОИВТ РАН проводит фундаментальные и прикладные исследования в области физики плазмы, энергетики, теплофизики. Организует Звенигородские конференции по физике плазмы и УТС, а также конференции по молекулярной динамике.',
+                'website': 'https://www.jiht.ru',
+                'description': 'ОИВТ РАН проводит фундаментальные и прикладные исследования в области физики плазмы, энергетики, теплофизики.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -481,214 +484,7 @@ def create_organizations_and_users():
                 'is_verified': True,
             }
         },
-        # УУНиТ (Уфа)
-        {
-            'username': 'uust_org',
-            'password': 'UustOrg2024!',
-            'user_data': {
-                'email': 'science@uust.ru',
-                'first_name': 'Владимир',
-                'last_name': 'Захаров',
-                'affiliation': 'УУНиТ',
-            },
-            'org_data': {
-                'name': 'Уфимский университет науки и технологий',
-                'short_name': 'УУНиТ',
-                'inn': '0274012345',
-                'kpp': '027401001',
-                'legal_address': '450076, г. Уфа, ул. Заки Валиди, д. 32',
-                'contact_person': 'Захаров Владимир Петрович',
-                'contact_position': 'Ректор',
-                'contact_email': 'science@uust.ru',
-                'contact_phone': '+7 (347) 272-63-70',
-                'website': 'https://uust.ru',
-                'description': 'УУНиТ — крупнейший вуз Башкортостана, образованный путем объединения БашГУ и УГАТУ. Проводит международную конференцию по телекоммуникациям и информационным технологиям совместно с ведущими вузами и предприятиями.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-    ]
-
-    organizations = {}
-
-    for org_info in organizations_data:
-        # Создаем или получаем пользователя
-        username = org_info['username']
-        password = org_info['password']
-        user_data = org_info['user_data']
-
-        user, created = CustomUser.objects.get_or_create(
-            username=username,
-            defaults=user_data
-        )
-
-        if created:
-            user.set_password(password)
-            user.save()
-            print_success(f"Создан пользователь: {username} ({user_data['email']})")
-        else:
-            print_info(f"Пользователь уже существует: {username}")
-
-        # Создаем или получаем организацию
-        org, created = Organization.objects.get_or_create(
-            inn=org_info['org_data']['inn'],
-            defaults={
-                **org_info['org_data'],
-                'user': user
-            }
-        )
-
-        if created:
-            print_success(f"Создана организация: {org.name}")
-        else:
-            print_info(f"Организация уже существует: {org.name}")
-
-        organizations[org.short_name] = org
-
-    return organizations
-
-
-def create_additional_organizations():
-    """Создание дополнительных организаций из новых источников"""
-    print_header("ДОБАВЛЕНИЕ НОВЫХ ОРГАНИЗАЦИЙ")
-
-    new_orgs_data = [
-        # ЦИАМ им. П.И. Баранова
-        {
-            'username': 'ciam_org',
-            'password': 'CiamOrg2026!',
-            'user_data': {
-                'email': 'conference@ciam.ru',
-                'first_name': 'Александр',
-                'last_name': 'Ланшин',
-                'affiliation': 'ЦИАМ им. П.И. Баранова',
-            },
-            'org_data': {
-                'name': 'Центральный институт авиационного моторостроения имени П.И. Баранова',
-                'short_name': 'ЦИАМ',
-                'inn': '7722012345',
-                'kpp': '772201001',
-                'legal_address': '111116, г. Москва, ул. Авиамоторная, д. 2',
-                'contact_person': 'Ланшин Александр Иванович',
-                'contact_position': 'Профессор, организационный комитет',
-                'contact_email': 'conference@ciam.ru',
-                'contact_phone': '+7 (495) 361-50-00',
-                'website': 'https://ciam.ru',
-                'description': 'ЦИАМ – единственная российская авиационная научная организация, обладающая уникальной экспериментальной базой для исследований в области авиационного двигателестроения. Институт проводит международные симпозиумы по неравновесным процессам, плазме, горению и атмосферным явлениям совместно с ведущими научными центрами.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # МЦХФ им. Н.Н. Семенова
-        {
-            'username': 'mchf_org',
-            'password': 'MchfOrg2026!',
-            'user_data': {
-                'email': 'science@chph.ras.ru',
-                'first_name': 'Сергей',
-                'last_name': 'Фролов',
-                'affiliation': 'МЦХФ им. Н.Н. Семенова',
-            },
-            'org_data': {
-                'name': 'Международный центр химической физики им. Н.Н. Семенова',
-                'short_name': 'МЦХФ',
-                'inn': '7736012345',
-                'kpp': '773601001',
-                'legal_address': '119991, г. Москва, ул. Косыгина, д. 4',
-                'contact_person': 'Фролов Сергей Михайлович',
-                'contact_position': 'Профессор, председатель оргкомитета',
-                'contact_email': 'science@chph.ras.ru',
-                'contact_phone': '+7 (495) 939-74-00',
-                'website': 'https://chph.ras.ru',
-                'description': 'МЦХФ им. Н.Н. Семенова – ведущий научный центр в области химической физики, основанный нобелевским лауреатом Н.Н. Семеновым. Институт проводит фундаментальные исследования в области горения, взрыва, химической кинетики и физики плазмы.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # НЭБ (Научная электронная библиотека)
-        {
-            'username': 'elibrary_org',
-            'password': 'Elibrary2026!',
-            'user_data': {
-                'email': 'info@elibrary.ru',
-                'first_name': 'Геннадий',
-                'last_name': 'Еременко',
-                'affiliation': 'НЭБ',
-            },
-            'org_data': {
-                'name': 'Научная электронная библиотека eLIBRARY.RU',
-                'short_name': 'НЭБ',
-                'inn': '7728012346',
-                'kpp': '772801001',
-                'legal_address': '121019, г. Москва, ул. Новый Арбат, д. 21',
-                'contact_person': 'Еременко Геннадий Олегович',
-                'contact_position': 'Генеральный директор',
-                'contact_email': 'info@elibrary.ru',
-                'contact_phone': '+7 (495) 123-45-67',
-                'website': 'https://elibrary.ru',
-                'description': 'Научная электронная библиотека eLIBRARY.RU – крупнейший российский информационный портал в области науки, технологии, медицины и образования. Ежегодно проводит международную конференцию SCIENCE ONLINE, посвященную цифровым экосистемам, наукометрии и искусственному интеллекту в научных исследованиях.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # Институт гидродинамики им. М.А. Лаврентьева СО РАН
-        {
-            'username': 'hydro_org',
-            'password': 'Hydro2026!',
-            'user_data': {
-                'email': 'conference@hydro.nsc.ru',
-                'first_name': 'Сергей',
-                'last_name': 'Голубев',
-                'affiliation': 'ИГиЛ СО РАН',
-            },
-            'org_data': {
-                'name': 'Институт гидродинамики им. М.А. Лаврентьева СО РАН',
-                'short_name': 'ИГиЛ СО РАН',
-                'inn': '5408112345',
-                'kpp': '540801001',
-                'legal_address': '630090, г. Новосибирск, пр. Академика Лаврентьева, д. 15',
-                'contact_person': 'Голубев Сергей Владимирович',
-                'contact_position': 'Ученый секретарь',
-                'contact_email': 'conference@hydro.nsc.ru',
-                'contact_phone': '+7 (383) 333-12-12',
-                'website': 'https://www.hydro.nsc.ru',
-                'description': 'ИГиЛ СО РАН – один из ведущих институтов Сибирского отделения РАН в области гидродинамики, физики взрыва, механики сплошных сред. Совместно с ФТИ им. Иоффе проводит международные конференции по наноуглероду и алмазу.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # Академический университет им. Ж.И. Алфёрова
-        {
-            'username': 'alferov_org',
-            'password': 'Alferov2026!',
-            'user_data': {
-                'email': 'science@spbau.ru',
-                'first_name': 'Алексей',
-                'last_name': 'Насонов',
-                'affiliation': 'Академический университет',
-            },
-            'org_data': {
-                'name': 'Санкт-Петербургский национальный исследовательский Академический университет имени Ж.И. Алфёрова РАН',
-                'short_name': 'Академический университет',
-                'inn': '7801123456',
-                'kpp': '780101001',
-                'legal_address': '194021, г. Санкт-Петербург, ул. Хлопина, д. 8, корп. 3',
-                'contact_person': 'Насонов Алексей Геннадьевич',
-                'contact_position': 'Проректор по научной работе',
-                'contact_email': 'science@spbau.ru',
-                'contact_phone': '+7 (812) 448-85-00',
-                'website': 'https://spbau.ru',
-                'description': 'Академический университет им. Ж.И. Алфёрова – уникальный научно-образовательный центр, объединяющий академическую науку и высшее образование. Проводит конференции по нанотехнологиям, физике полупроводников и люминесценции совместно с ФТИ им. Иоффе.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # МГТУ им. Н.Э. Баумана
+        # МГТУ им. Баумана
         {
             'username': 'bmstu_org',
             'password': 'Bmstu2026!',
@@ -709,115 +505,85 @@ def create_additional_organizations():
                 'contact_email': 'science@bmstu.ru',
                 'contact_phone': '+7 (499) 263-65-05',
                 'website': 'https://bmstu.ru',
-                'description': 'МГТУ им. Н.Э. Баумана – ведущий технический университет России. Является главным организатором Всероссийского форума «Шаг в будущее», который объединяет молодых исследователей и школьников со всей страны. Форум проходит на базе 14 научных центров и 11 университетов.',
+                'description': 'МГТУ им. Н.Э. Баумана – ведущий технический университет России. Главный организатор Всероссийского форума «Шаг в будущее».',
                 'is_active': True,
                 'is_verified': True,
             }
         },
-
-        # МЭИ (Национальный исследовательский университет)
+        # СО РАН (Сибирское отделение РАН)
         {
-            'username': 'mpei_org',
-            'password': 'Mpei2026!',
+            'username': 'sbras_org',
+            'password': 'Sbras2026!',
             'user_data': {
-                'email': 'science@mpei.ru',
-                'first_name': 'Николай',
-                'last_name': 'Рогалев',
-                'affiliation': 'НИУ МЭИ',
+                'email': 'conferences@sbras.ru',
+                'first_name': 'Валентин',
+                'last_name': 'Пармон',
+                'affiliation': 'СО РАН',
             },
             'org_data': {
-                'name': 'Национальный исследовательский университет «МЭИ»',
-                'short_name': 'НИУ МЭИ',
-                'inn': '7721012345',
-                'kpp': '772101001',
-                'legal_address': '111250, г. Москва, ул. Красноказарменная, д. 14',
-                'contact_person': 'Рогалев Николай Дмитриевич',
-                'contact_position': 'Ректор',
-                'contact_email': 'science@mpei.ru',
-                'contact_phone': '+7 (495) 362-70-00',
-                'website': 'https://mpei.ru',
-                'description': 'НИУ МЭИ – ведущий энергетический университет России. Активно участвует в организации Всероссийского форума «Шаг в будущее», проводя секции по цифровой энергетике, экологии техносферы, физическим основам технологий, информационной безопасности и экономике.',
+                'name': 'Сибирское отделение Российской академии наук',
+                'short_name': 'СО РАН',
+                'inn': '5408001234',
+                'kpp': '540801001',
+                'legal_address': '630090, г. Новосибирск, проспект Академика Лаврентьева, 17',
+                'contact_person': 'Пармон Валентин Николаевич',
+                'contact_position': 'Председатель СО РАН',
+                'contact_email': 'conferences@sbras.ru',
+                'contact_phone': '+7 (383) 330-75-01',
+                'website': 'https://www.sbras.ru',
+                'description': 'Сибирское отделение РАН объединяет более 80 научных институтов. Проводит множество конференций по различным направлениям науки.',
                 'is_active': True,
                 'is_verified': True,
             }
         },
-
-        # ИОФ РАН (Институт общей физики)
+        # ИЗК СО РАН (Институт земной коры)
         {
-            'username': 'gpi_org',
-            'password': 'Gpi2026!',
+            'username': 'crust_org',
+            'password': 'Crust2026!',
             'user_data': {
-                'email': 'conference@gpi.ru',
+                'email': 'conferences@crust.irk.ru',
+                'first_name': 'Дмитрий',
+                'last_name': 'Гладкочуб',
+                'affiliation': 'ИЗК СО РАН',
+            },
+            'org_data': {
+                'name': 'Институт земной коры СО РАН',
+                'short_name': 'ИЗК СО РАН',
+                'inn': '3811001234',
+                'kpp': '381101001',
+                'legal_address': '664033, г. Иркутск, ул. Лермонтова, д. 128',
+                'contact_person': 'Гладкочуб Дмитрий Петрович',
+                'contact_position': 'Директор',
+                'contact_email': 'conferences@crust.irk.ru',
+                'contact_phone': '+7 (3952) 42-27-00',
+                'website': 'https://www.crust.irk.ru',
+                'description': 'Институт земной коры СО РАН проводит конференции по сейсмологии, геологии и сейсмической безопасности.',
+                'is_active': True,
+                'is_verified': True,
+            }
+        },
+        # АЛТГУ (Алтайский государственный университет)
+        {
+            'username': 'asu_org',
+            'password': 'Asu2026!',
+            'user_data': {
+                'email': 'science@asu.ru',
                 'first_name': 'Сергей',
-                'last_name': 'Гарнов',
-                'affiliation': 'ИОФ РАН',
+                'last_name': 'Бочаров',
+                'affiliation': 'АлтГУ',
             },
             'org_data': {
-                'name': 'Институт общей физики им. А.М. Прохорова РАН',
-                'short_name': 'ИОФ РАН',
-                'inn': '7736012346',
-                'kpp': '773601001',
-                'legal_address': '119991, г. Москва, ул. Вавилова, д. 38',
-                'contact_person': 'Гарнов Сергей Владимирович',
-                'contact_position': 'Директор',
-                'contact_email': 'conference@gpi.ru',
-                'contact_phone': '+7 (499) 503-87-77',
-                'website': 'https://www.gpi.ru',
-                'description': 'ИОФ РАН им. А.М. Прохорова – ведущий институт в области лазерной физики, фотоники и спектроскопии. Проводит секцию «Общая физика» в рамках Всероссийского форума «Шаг в будущее», объединяя молодых исследователей со всей страны.',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # ИМЕТ РАН (Институт металлургии и материаловедения)
-        {
-            'username': 'imet_org',
-            'password': 'Imet2026!',
-            'user_data': {
-                'email': 'science@imet.ac.ru',
-                'first_name': 'Владимир',
-                'last_name': 'Комлев',
-                'affiliation': 'ИМЕТ РАН',
-            },
-            'org_data': {
-                'name': 'Институт металлургии и материаловедения им. А.А. Байкова РАН',
-                'short_name': 'ИМЕТ РАН',
-                'inn': '7736012347',
-                'kpp': '773601001',
-                'legal_address': '119991, г. Москва, Ленинский пр-т, д. 49',
-                'contact_person': 'Комлев Владимир Сергеевич',
-                'contact_position': 'Директор',
-                'contact_email': 'science@imet.ac.ru',
-                'contact_phone': '+7 (499) 135-20-60',
-                'website': 'https://www.imet.ac.ru',
-                'description': 'ИМЕТ РАН им. А.А. Байкова – ведущий институт в области металлургии, материаловедения, наноматериалов и керамики. Проводит секцию «Технологии создания новых материалов» на Всероссийском форуме «Шаг в будущее».',
-                'is_active': True,
-                'is_verified': True,
-            }
-        },
-
-        # ИКИ РАН (Институт космических исследований)
-        {
-            'username': 'iki_org',
-            'password': 'Iki2026!',
-            'user_data': {
-                'email': 'science@cosmos.ru',
-                'first_name': 'Анатолий',
-                'last_name': 'Петрукович',
-                'affiliation': 'ИКИ РАН',
-            },
-            'org_data': {
-                'name': 'Институт космических исследований РАН',
-                'short_name': 'ИКИ РАН',
-                'inn': '7736012348',
-                'kpp': '773601001',
-                'legal_address': '117997, г. Москва, ул. Профсоюзная, д. 84/32',
-                'contact_person': 'Петрукович Анатолий Алексеевич',
-                'contact_position': 'Директор',
-                'contact_email': 'science@cosmos.ru',
-                'contact_phone': '+7 (495) 333-23-33',
-                'website': 'https://www.iki.cosmos.ru',
-                'description': 'ИКИ РАН – ведущий институт России в области космических исследований, астрофизики и планетологии. Проводит секцию «Земля и Вселенная» на Всероссийском форуме «Шаг в будущее», привлекая молодых исследователей в космическую науку.',
+                'name': 'Алтайский государственный университет',
+                'short_name': 'АлтГУ',
+                'inn': '2225001234',
+                'kpp': '222501001',
+                'legal_address': '656049, г. Барнаул, проспект Ленина, д. 61',
+                'contact_person': 'Бочаров Сергей Николаевич',
+                'contact_position': 'Проректор по научной работе',
+                'contact_email': 'science@asu.ru',
+                'contact_phone': '+7 (3852) 29-12-58',
+                'website': 'https://www.asu.ru',
+                'description': 'Алтайский государственный университет проводит конференции по гуманитарным наукам, включая круглый стол по фронтирным территориям.',
                 'is_active': True,
                 'is_verified': True,
             }
@@ -825,8 +591,8 @@ def create_additional_organizations():
     ]
 
     organizations = {}
-    for org_info in new_orgs_data:
-        # Создаем пользователя
+
+    for org_info in organizations_data:
         username = org_info['username']
         password = org_info['password']
         user_data = org_info['user_data']
@@ -839,11 +605,10 @@ def create_additional_organizations():
         if created:
             user.set_password(password)
             user.save()
-            print_success(f"Создан пользователь: {username}")
+            print_success(f"Создан пользователь: {username} ({user_data['email']})")
         else:
             print_info(f"Пользователь уже существует: {username}")
 
-        # Создаем организацию
         org, created = Organization.objects.get_or_create(
             inn=org_info['org_data']['inn'],
             defaults={
@@ -854,39 +619,404 @@ def create_additional_organizations():
 
         if created:
             print_success(f"Создана организация: {org.name}")
-            organizations[org.short_name] = org
         else:
             print_info(f"Организация уже существует: {org.name}")
-            organizations[org.short_name] = org
+
+        organizations[org.short_name] = org
 
     return organizations
 
 
 def create_conferences(organizations, topics):
-    """Создание основных конференций"""
-    print_header("СОЗДАНИЕ КОНФЕРЕНЦИЙ")
+    """Создание конференций на основе актуальных данных 2026-2027 годов"""
+    print_header("СОЗДАНИЕ КОНФЕРЕНЦИЙ И МЕРОПРИЯТИЙ")
 
     today = date.today()
+
+    # Актуальные мероприятия на основе поисковых результатов [citation:1][citation:2][citation:3]
     conferences_data = [
+        # ОИВТ РАН - Возобновляемая энергетика (форум) [citation:1]
+        {
+            'title': 'VII Международная конференция «Возобновляемая энергетика: проблемы и перспективы»',
+            'short_title': 'ВЭ-2026',
+            'organization': organizations['ОИВТ РАН'],
+            'event_type': 'forum',
+            'format': 'offline',
+            'participation_format': 'hybrid',
+            'start_date': date(2026, 9, 21),
+            'end_date': date(2026, 9, 24),
+            'deadline': date(2026, 6, 1),
+            'location': 'Махачкала',
+            'venue': 'Дагестанский государственный университет',
+            'address': 'г. Махачкала, ул. Гаджиева, 43-а',
+            'description': 'VII Международная конференция «Возобновляемая энергетика: проблемы и перспективы» и XIII Школа молодых ученых «Актуальные проблемы освоения возобновляемых энергоресурсов» им. Э. Э. Шпильрайна. Мероприятие посвящено актуальным проблемам и перспективам развития возобновляемой энергетики в России и мире.',
+            'program': 'Пленарные доклады, секционные заседания, школа молодых ученых, круглые столы.',
+            'requirements': 'Требования к оформлению тезисов на сайте конференции.',
+            'requirements_link': 'http://renen-conf.ru/requirements',
+            'participation_terms': 'Организационный взнос: 6000 руб., для студентов и аспирантов - 3000 руб. Регистрация до 1 июня 2026 г.',
+            'contact_email': 'renen@jiht.ru',
+            'contact_phone': '+7 (495) 484-23-33',
+            'contact_person': 'Оргкомитет',
+            'website': 'http://renen-conf.ru',
+            'is_featured': True,
+            'is_free': False,
+            'has_publications': True,
+            'publication_indexing': 'РИНЦ',
+            'topics': ['Возобновляемая энергетика', 'Энергетика', 'Технические науки'],
+        },
+
+        # ОИВТ РАН - Физика низкотемпературной плазмы [citation:9]
+        {
+            'title': 'Всероссийская (с международным участием) конференция «Физика низкотемпературной плазмы»',
+            'short_title': 'ФНТП-2026',
+            'organization': organizations['ОИВТ РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 6, 1),
+            'end_date': date(2026, 6, 5),
+            'deadline': date(2026, 4, 20),
+            'location': 'Казань',
+            'venue': 'Казанский федеральный университет',
+            'address': 'г. Казань, ул. Кремлевская, д. 18',
+            'description': 'Всероссийская (с международным участием) конференция «Физика низкотемпературной плазмы» (ФНТП-2026). Конференция посвящена фундаментальным и прикладным аспектам физики низкотемпературной плазмы, плазменным технологиям и диагностике плазмы.',
+            'program': 'Пленарные и секционные доклады, постерная сессия.',
+            'requirements': 'Требования к оформлению на сайте конференции.',
+            'requirements_link': 'https://jiht.ru/fntp2026',
+            'participation_terms': 'Прием заявок до 20 апреля 2026 г.',
+            'contact_email': 'plasma@jiht.ru',
+            'contact_phone': '+7 (495) 484-23-33',
+            'website': 'https://jiht.ru/fntp2026',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Физика плазмы', 'Физика', 'Технические науки'],
+        },
+
+        # ОИВТ РАН - Молекулярная динамика [citation:9]
+        {
+            'title': 'II Всероссийская конференция «Молекулярная Динамика»',
+            'short_title': 'MD-2026',
+            'organization': organizations['ОИВТ РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 6, 28),
+            'end_date': date(2026, 7, 5),
+            'deadline': date(2026, 3, 1),
+            'location': 'Санкт-Петербург, г. Пушкин',
+            'venue': 'Конференц-центр',
+            'address': 'г. Пушкин, Санкт-Петербург',
+            'description': 'II Всероссийская конференция «Молекулярная Динамика» в г. Пушкин (Санкт-Петербург). Обсуждение современных методов молекулярного моделирования и их применений в различных областях науки.',
+            'program': 'Пленарные лекции, секционные доклады, школы для молодых учёных.',
+            'requirements': 'Окончание регистрации и приёма тезисов докладов до 1 марта 2026 г.',
+            'requirements_link': 'https://jiht.ru/md2026',
+            'participation_terms': 'Оргвзнос: 5000 руб. Для студентов и аспирантов: 2500 руб.',
+            'contact_email': 'md@jiht.ru',
+            'contact_phone': '+7 (495) 484-23-33',
+            'website': 'https://jiht.ru/md2026',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Физика', 'Химия', 'Биология', 'Молекулярная биология'],
+        },
+
+        # ОИВТ РАН - Звенигородская конференция по физике плазмы [citation:9]
+        {
+            'title': '53 МЕЖДУНАРОДНАЯ КОНФЕРЕНЦИЯ ПО ФИЗИКЕ ПЛАЗМЫ И УПРАВЛЯЕМОМУ ТЕРМОЯДЕРНОМУ СИНТЕЗУ',
+            'short_title': 'Звенигород-2026',
+            'organization': organizations['ОИВТ РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 3, 16),
+            'end_date': date(2026, 3, 20),
+            'deadline': date(2025, 11, 10),
+            'location': 'Московская обл., Звенигород',
+            'venue': 'Пансионат',
+            'address': 'г. Звенигород, Московская обл.',
+            'description': 'Крупнейшая конференция по физике плазмы и управляемому термоядерному синтезу, традиционно проводимая в Звенигороде. Ведущие учёные и специалисты представляют последние достижения в области физики плазмы, УТС и смежных направлениях.',
+            'program': 'Пленарные и секционные доклады, постерная сессия. Основные направления: физика высокотемпературной плазмы, УТС, физические аспекты термоядерных реакторов.',
+            'requirements': 'Докладчики должны были заполнить регистрационную форму до 10 ноября 2025 г.',
+            'requirements_link': 'https://plasma2026.jiht.ru',
+            'participation_terms': 'Оргвзнос: 8000 руб., для студентов 4000 руб.',
+            'contact_email': 'plasma@jiht.ru',
+            'contact_phone': '+7 (495) 484-23-33',
+            'website': 'https://plasma2026.jiht.ru',
+            'is_featured': True,
+            'is_free': False,
+            'topics': ['Физика плазмы', 'Физика', 'Энергетика'],
+        },
+
+        # МГТУ им. Баумана - Шаг в будущее (форум) [citation:2]
+        {
+            'title': 'Всероссийский форум научной молодёжи «Шаг в будущее» 2026',
+            'short_title': 'Шаг в будущее-2026',
+            'organization': organizations['МГТУ им. Баумана'],
+            'event_type': 'forum',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 3, 23),
+            'end_date': date(2026, 3, 27),
+            'deadline': date(2026, 1, 15),
+            'location': 'Москва',
+            'venue': 'МГТУ им. Баумана и другие площадки',
+            'address': 'г. Москва',
+            'description': 'Крупнейшее мероприятие Десятилетия науки и технологий для молодых исследователей и школьников, объединяющее 52 научные секции по всем направлениям: от инженерных наук до социально-гуманитарных. Организаторы: МГТУ им. Баумана, Российское молодёжное политехническое общество, при участии ведущих институтов РАН, госкорпораций и высокотехнологичных компаний. Председатель Программного комитета форума – Вице-президент РАН академик С.Н. Калмыков.',
+            'program': '52 секции по 4 симпозиумам: Инженерные науки, Естественные науки, Математика и ИТ, Социально-гуманитарные науки. Научно-технологическая выставка, фестиваль молодых модельеров, битва команд за Научно-технологический кубок России. Участники: школьники, студенты колледжей и начальных курсов вузов.',
+            'requirements': 'Подробные требования к работам на сайте форума.',
+            'requirements_link': 'https://шагвбудущее.рф',
+            'participation_terms': 'Участие бесплатное. Победители и призёры пользуются льготами при поступлении в вузы.',
+            'contact_email': 'info@step-into-the-future.ru',
+            'contact_phone': '+7 (499) 263-65-05',
+            'website': 'https://шагвбудущее.рф',
+            'is_featured': True,
+            'is_free': True,
+            'topics': [
+                'Технические науки', 'Физика', 'Химия', 'Биология',
+                'Математика', 'Информатика', 'Гуманитарные науки',
+                'Экономика', 'Образование'
+            ],
+        },
+
+        # ИПУ РАН - Нелинейный анализ и экстремальные задачи (школа-семинар) [citation:3]
+        {
+            'title': 'IX Международная школа-семинар «Нелинейный анализ и экстремальные задачи»',
+            'short_title': 'NLA-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'school',
+            'format': 'offline',
+            'participation_format': 'hybrid',
+            'start_date': date(2026, 6, 22),
+            'end_date': date(2026, 6, 26),
+            'deadline': date(2026, 5, 1),
+            'location': 'Иркутск',
+            'venue': 'Иркутский научный центр СО РАН',
+            'address': 'г. Иркутск',
+            'description': 'IX Международная школа-семинар «Нелинейный анализ и экстремальные задачи» (NLA-2026). Цель конференции — обсуждение современных тенденций в области нелинейного анализа, экстремальных задач и их приложений.',
+            'program': 'Пленарные лекции ведущих учёных, секционные доклады молодых исследователей.',
+            'requirements': 'Регистрация и подача тезисов на английском языке до 1 мая 2026 г.',
+            'participation_terms': 'Без оргвзноса. Участие в гибридном формате (онлайн и очное).',
+            'contact_email': 'nla2026@isem.irk.ru',
+            'contact_phone': '+7 (3952) 42-71-00',
+            'website': 'https://nla2026.isem.irk.ru',
+            'is_featured': False,
+            'is_free': True,
+            'topics': ['Нелинейный анализ', 'Экстремальные задачи', 'Математика'],
+        },
+
+        # МГТУ ГА - Гражданская авиация (конференция) [citation:3]
+        {
+            'title': 'XV Международная научно-техническая конференция «Гражданская авиация на современном этапе развития науки, техники и общества»',
+            'short_title': 'ГА-2026',
+            'organization': organizations['МГТУ им. Баумана'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 5, 20),
+            'end_date': date(2026, 5, 21),
+            'deadline': date(2026, 4, 1),
+            'location': 'Москва',
+            'venue': 'Московский государственный технический университет гражданской авиации',
+            'address': 'г. Москва',
+            'description': 'XV Международная научно-техническая конференция, посвященная 55-летию МГТУ ГА «Гражданская авиация на современном этапе развития науки, техники и общества». Конференция посвящена актуальным проблемам развития гражданской авиации, авиационной техники и технологий.',
+            'program': 'Пленарные доклады, секционные заседания по направлениям: авиационная техника, аэронавигация, экономика и управление на транспорте.',
+            'requirements': 'Требования к оформлению на сайте конференции.',
+            'contact_email': 'science@mstuca.ru',
+            'website': 'https://mstuca.ru/conference2026',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Авиация', 'Технические науки', 'Управление летательными аппаратами'],
+        },
+
+        # Молодежь. Техника. Космос (конференция) [citation:3]
+        {
+            'title': 'XVIII Международная молодежная научно-техническая конференция «Молодежь. Техника. Космос»',
+            'short_title': 'МТК-2026',
+            'organization': organizations['МГТУ им. Баумана'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 3, 30),
+            'end_date': date(2026, 4, 2),
+            'deadline': date(2026, 2, 15),
+            'location': 'Санкт-Петербург',
+            'venue': 'Балтийский государственный технический университет «ВОЕНМЕХ»',
+            'address': 'г. Санкт-Петербург',
+            'description': 'XVIII Международная молодежная научно-техническая конференция «Молодежь. Техника. Космос». Мероприятие объединяет молодых ученых, аспирантов и студентов, работающих в области ракетно-космической техники и технологий.',
+            'program': 'Секционные заседания по ракетно-космической технике, приборостроению, информационным технологиям.',
+            'requirements': 'Требования на сайте конференции.',
+            'contact_email': 'youth@voenmeh.ru',
+            'website': 'https://www.voenmeh.ru/conference2026',
+            'is_featured': False,
+            'is_free': True,
+            'topics': ['Космонавтика', 'Технические науки', 'Информатика'],
+        },
+
+        # Супервычисления и математическое моделирование (конференция) [citation:3]
+        {
+            'title': 'XX Международная конференция «Супервычисления и математическое моделирование»',
+            'short_title': 'СММ-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 10, 5),
+            'end_date': date(2026, 10, 9),
+            'deadline': date(2026, 8, 1),
+            'location': 'Саров',
+            'venue': 'РФЯЦ-ВНИИЭФ',
+            'address': 'г. Саров, Нижегородская обл.',
+            'description': 'XX Международная конференция «Супервычисления и математическое моделирование». Конференция посвящена развитию методов математического моделирования и суперкомпьютерных технологий для решения фундаментальных и прикладных задач.',
+            'program': 'Пленарные доклады ведущих ученых, секционные заседания, школа для молодых ученых.',
+            'requirements': 'Требования на сайте конференции. Рабочие языки: русский, английский.',
+            'requirements_link': 'https://conf.vniief.ru/supercomputing',
+            'contact_email': 'super@vniief.ru',
+            'website': 'https://conf.vniief.ru/supercomputing',
+            'is_featured': True,
+            'is_free': False,
+            'topics': ['Супервычисления', 'Математическое моделирование', 'Информатика'],
+        },
+
+        # ИЗК СО РАН - Сейсмическая безопасность (конференция) [citation:5]
+        {
+            'title': 'XVII Российская национальная конференция по сейсмической безопасности и снижению риска бедствий',
+            'short_title': 'Сейсмобезопасность-2026',
+            'organization': organizations['ИЗК СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 3, 10),
+            'end_date': date(2026, 3, 12),
+            'deadline': date(2026, 2, 1),
+            'location': 'Иркутск',
+            'venue': 'Институт земной коры СО РАН',
+            'address': 'г. Иркутск, ул. Лермонтова, д. 128',
+            'description': 'XVII Российская национальная конференция по сейсмической безопасности и снижению риска бедствий. Пленарное заседание во Дворце Молодежи Иркутской области, панельные секции и круглый стол на базе Института земной коры СО РАН.',
+            'program': 'Пленарное заседание, панельные секции, круглый стол по вопросам сейсмической безопасности.',
+            'requirements': 'Требования на сайте конференции.',
+            'contact_email': 'conference@crust.irk.ru',
+            'website': 'https://www.crust.irk.ru/seismo2026',
+            'is_featured': True,
+            'is_free': False,
+            'topics': ['Сейсмология', 'Сейсмическая безопасность', 'Геология', 'Геофизика'],
+        },
+
+        # Медицинская химия (конференция) [citation:5]
+        {
+            'title': '7-я Российская конференция по медицинской химии',
+            'short_title': 'МедХим-Россия 2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 8, 24),
+            'end_date': date(2026, 8, 28),
+            'deadline': date(2026, 5, 1),
+            'location': 'пос. Большое Голоустное, Иркутская обл.',
+            'venue': 'Байкал, база отдыха',
+            'address': 'п. Большое Голоустное, Иркутская обл.',
+            'description': 'Организационный комитет конференции МедХим-Россия 2026 приглашает академических и университетских исследователей, зарубежных ученых, представителей фармацевтического бизнеса и медицины, аспирантов и студентов принять участие в 7-й Российской конференции по медицинской химии на берегу озера Байкал.',
+            'program': 'Секции по медицинской химии, фармакологии, дизайну лекарственных средств.',
+            'requirements': 'Регистрация и подача тезисов до 1 мая 2026 г.',
+            'contact_email': 'medchem2026@irioch.ru',
+            'website': 'https://medchem2026.sbras.ru',
+            'is_featured': True,
+            'is_free': False,
+            'topics': ['Медицинская химия', 'Химия', 'Медицина'],
+        },
+
+        # Геология и минеральные ресурсы Северо-Востока России (конференция) [citation:5]
+        {
+            'title': 'XVI Международная научно-практическая конференция «Геология и минерально-сырьевые ресурсы Северо-Востока России»',
+            'short_title': 'Геология-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 3, 23),
+            'end_date': date(2026, 3, 26),
+            'deadline': date(2026, 2, 1),
+            'location': 'Иркутск',
+            'venue': 'Институт земной коры СО РАН',
+            'address': 'г. Иркутск',
+            'description': 'XVI Международная научно-практическая конференция «Геология и минерально-сырьевые ресурсы Северо-Востока России». Конференция посвящена 135-летнему юбилею со дня рождения член-корреспондента АН СССР Сергея Владимировича Обручева. Ведущие ученые в области наук о Земле обсудят вопросы геологии, геокриологии, экологии, добычи полезных ископаемых на территории Северо-востока РФ.',
+            'program': 'Секции по геологии, геокриологии, экологии, добыче полезных ископаемых.',
+            'requirements': 'Требования на сайте конференции.',
+            'contact_email': 'geo2026@crust.irk.ru',
+            'website': 'https://www.crust.irk.ru/geo2026',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Геология', 'Геология и минеральные ресурсы', 'Науки о Земле'],
+        },
+
+        # Микробиология (конференция) [citation:5]
+        {
+            'title': 'IV Всероссийская конференция с международным участием «Механизмы адаптации микроорганизмов к различным условиям среды обитания»',
+            'short_title': 'MICRAD-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 8, 24),
+            'end_date': date(2026, 8, 29),
+            'deadline': date(2026, 5, 1),
+            'location': 'Иркутск / оз. Байкал',
+            'venue': 'Турбаза Уюга',
+            'address': 'п. Большое Голоустное, Иркутская обл.',
+            'description': 'IV Всероссийская конференция с международным участием «Механизмы адаптации микроорганизмов к различным условиям среды обитания – MICRAD-2026» на берегу озера Байкал.',
+            'program': 'Секции по микробиологии, молекулярной биологии, адаптации микроорганизмов.',
+            'requirements': 'Требования на сайте конференции.',
+            'contact_email': 'micrad2026@lin.irk.ru',
+            'website': 'https://micrad2026.lin.irk.ru',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Микробиология', 'Биология', 'Молекулярная биология'],
+        },
+
+        # Региональная энергетическая политика (конференция) [citation:5]
+        {
+            'title': 'V Всероссийская конференция «Региональная энергетическая политика»',
+            'short_title': 'РЭП-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 6, 15),
+            'end_date': date(2026, 6, 18),
+            'deadline': date(2026, 4, 1),
+            'location': 'Иркутск, п. Никола',
+            'venue': 'Байкал',
+            'address': 'Иркутский р-н, п. Никола',
+            'description': 'V Всероссийская конференция «Региональная энергетическая политика». Цель конференции — обсуждение актуальных проблем региональной энергетической политики, энергосбережения и повышения энергоэффективности.',
+            'program': 'Пленарные доклады, секционные заседания, круглые столы.',
+            'requirements': 'Требования на сайте конференции.',
+            'contact_email': 'energy@isem.irk.ru',
+            'website': 'https://energy2026.isem.irk.ru',
+            'is_featured': False,
+            'is_free': False,
+            'topics': ['Энергетика', 'Энергетическая политика', 'Экономика'],
+        },
+
         # МГУ - Инновации в геологии, геофизике и географии
         {
-            'title': 'XI Международная научно-практическая конференция "Инновации в геологии, геофизике и географии-2026"',
+            'title': 'XI Международная научно-практическая конференция «Инновации в геологии, геофизике и географии-2026»',
+            'short_title': 'Инновации-2026',
             'organization': organizations['МГУ'],
-            'conference_type': 'international',
+            'event_type': 'conference',
             'format': 'offline',
+            'participation_format': 'hybrid',
             'start_date': date(2026, 6, 30),
             'end_date': date(2026, 7, 3),
             'deadline': date(2026, 5, 1),
-            'location': 'Москва, МГУ, Геологический факультет',
+            'location': 'Москва, МГУ',
             'venue': 'Геологический факультет МГУ',
             'address': '119234, г. Москва, Ленинские горы, д. 1',
             'description': 'Конференция посвящена инновационным методам в геологии, геофизике и географии. Включает секции по малоглубинным геофизическим исследованиям, проблемам Арктического региона, геодинамике, трещиноватости горных пород, грязевому вулканизму, искусственному интеллекту в науках о Земле, криосфере и цифровым двойникам.',
             'program': 'Пленарное заседание, круглые столы, секционные заседания по 14 научным направлениям.',
-            'requirements': 'Тезисы докладов принимаются в формате PDF. Объем: 2-4 страницы. Образец оформления на сайте конференции.',
+            'requirements': 'Тезисы докладов принимаются в формате PDF. Объем: 2-4 страницы.',
+            'requirements_link': 'https://inno-earthscience-conf.ru/requirements',
             'participation_terms': 'Организационный взнос: для представителей организаций - 8500 руб., для вузов и институтов РАН - 3000 руб., для студентов - 1000 руб.',
             'contact_email': 'innoearthscience@yandex.ru',
             'contact_phone': '+7 (495) 939-10-00',
-            'contact_person': 'Оргкомитет конференции',
             'website': 'https://inno-earthscience-conf.ru',
             'is_featured': True,
             'is_free': False,
@@ -897,9 +1027,11 @@ def create_conferences(organizations, topics):
         # СПбГУ - Беломорская студенческая научная сессия
         {
             'title': 'Беломорская студенческая научная сессия СПбГУ — 2026',
+            'short_title': 'Беломорская сессия-2026',
             'organization': organizations['СПбГУ'],
-            'conference_type': 'university',
+            'event_type': 'school',
             'format': 'offline',
+            'participation_format': 'offline',
             'start_date': date(2026, 2, 3),
             'end_date': date(2026, 2, 5),
             'deadline': date(2025, 11, 14),
@@ -909,222 +1041,51 @@ def create_conferences(organizations, topics):
             'description': 'Конференция посвящена исследованиям, связанным с Арктическим регионом. Площадка для молодых учёных, где они могут поделиться результатами своих оригинальных исследований. Для студентов младших курсов — возможность попробовать силы в формате постерного или устного доклада.',
             'program': 'Устные и постерные доклады студентов, аспирантов и молодых учёных (до 30 лет). Рабочие языки: русский, английский.',
             'requirements': 'Требования к оформлению тезисов на сайте конференции.',
+            'requirements_link': 'https://events.spbu.ru/session-2026/requirements',
             'participation_terms': 'Участие только в очном формате. Каждый участник может представить один доклад в качестве основного автора.',
             'contact_email': 'a.v.kudryavtseva@spbu.ru',
             'contact_phone': '+7 (812) 363-60-44',
-            'contact_person': 'Кудрявцева Анастасия Валерьевна',
             'website': 'https://events.spbu.ru/session-2026',
             'is_featured': False,
             'is_free': True,
             'topics': ['Арктические исследования', 'География', 'Биология', 'Науки о Земле'],
         },
 
-        # МФТИ - Перспективные функциональные материалы
+        # МФТИ - Функциональные материалы
         {
-            'title': 'II Международная научная конференция "Перспективные функциональные материалы для цифровой и квантовой электроники 2026"',
+            'title': 'II Международная научная конференция «Перспективные функциональные материалы для цифровой и квантовой электроники 2026»',
+            'short_title': 'PFM-2026',
             'organization': organizations['МФТИ'],
-            'conference_type': 'international',
+            'event_type': 'conference',
             'format': 'offline',
+            'participation_format': 'hybrid',
             'start_date': date(2026, 9, 14),
             'end_date': date(2026, 9, 18),
             'deadline': date(2026, 6, 1),
-            'location': 'Московская обл., Долгопрудный, МФТИ',
+            'location': 'Московская обл., Долгопрудный',
             'venue': 'МФТИ',
             'address': '141701, Московская обл., г. Долгопрудный, Институтский пер., д. 9',
             'description': 'Конференция посвящена перспективным функциональным материалам для цифровой и квантовой электроники. Ведущие учёные и специалисты обсуждают последние достижения в области материаловедения и квантовых технологий.',
             'program': 'Пленарные доклады, секционные заседания, постерная сессия.',
-            'requirements': 'Тезисы докладов принимаются до 1 июня 2026 г. Требования на сайте конференции.',
+            'requirements': 'Тезисы докладов принимаются до 1 июня 2026 г.',
+            'requirements_link': 'https://mipt.ru/conferences/functional-materials-2026/requirements',
             'participation_terms': 'Организационный взнос для участников: 5000 руб. Для студентов и аспирантов: 2500 руб.',
             'contact_email': 'science@mipt.ru',
             'contact_phone': '+7 (495) 408-45-54',
-            'contact_person': 'Оргкомитет',
             'website': 'https://mipt.ru/conferences/functional-materials-2026',
             'is_featured': True,
             'is_free': False,
             'topics': ['Функциональные материалы', 'Физика полупроводников', 'Квантовая физика', 'Материаловедение'],
         },
 
-        # НИЯУ МИФИ - Финатлон форум
-        {
-            'title': 'VIII Международная научно-практическая конференция молодых учёных и специалистов «Финатлон форум – Профессионалы будущего»',
-            'organization': organizations['НИЯУ МИФИ'],
-            'conference_type': 'international',
-            'format': 'hybrid',
-            'start_date': date(2026, 4, 21),
-            'end_date': date(2026, 4, 25),
-            'deadline': date(2026, 3, 15),
-            'location': 'Москва, НИЯУ МИФИ',
-            'venue': 'НИЯУ МИФИ',
-            'address': '115409, г. Москва, Каширское шоссе, д. 31',
-            'description': 'Конференция посвящена вопросам устойчивого развития, инвестиций и финансовых рисков. Ежегодная площадка для выявления и поддержки талантливой молодёжи. В 2025 году в форуме приняли участие авторы более 1200 научных работ из более чем 140 ведущих вузов России и зарубежья.',
-            'program': 'Отборочный дистанционный этап (20 марта – 10 апреля), финальная конференция (21–25 апреля). Лучшие работы публикуются в сборнике РИНЦ.',
-            'requirements': 'Требования к оформлению работ на сайте finatlonforum.ru',
-            'participation_terms': 'Регистрация и подача работ: 25 февраля – 15 марта 2026 года.',
-            'contact_email': 'science.conf@mephi.ru',
-            'contact_phone': '+7 (495) 369-04-03',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://finatlonforum.ru',
-            'is_featured': False,
-            'is_free': True,
-            'topics': ['Экономика', 'Финансы', 'Инвестиции', 'Устойчивое развитие'],
-        },
-
-        # ФТИ им. Иоффе - Физика полупроводников
-        {
-            'title': 'Молодежная конференция по физике полупроводников',
-            'organization': organizations['ФТИ им. Иоффе'],
-            'conference_type': 'national',
-            'format': 'offline',
-            'start_date': date(2026, 2, 25),
-            'end_date': date(2026, 3, 1),
-            'deadline': date(2026, 1, 15),
-            'location': 'Ленинградская обл., Зеленогорск',
-            'venue': 'Дом отдыха',
-            'address': 'Зеленогорск, Санкт-Петербург',
-            'description': 'Молодежная конференция по физике полупроводников, организуемая ФТИ им. А.Ф. Иоффе. Молодые учёные представляют свои исследования в области физики полупроводников и наноструктур.',
-            'program': 'Устные и постерные доклады молодых учёных. Лекции ведущих специалистов.',
-            'requirements': 'Тезисы докладов принимаются до 15 января 2026 г.',
-            'participation_terms': 'Участие бесплатное. Проживание и питание за счёт участников.',
-            'contact_email': 'conferences@mail.ioffe.ru',
-            'contact_phone': '+7 (812) 292-79-29',
-            'contact_person': 'Куницына Екатерина Вадимовна',
-            'website': 'https://www.ioffe.ru/conferences',
-            'is_featured': False,
-            'is_free': True,
-            'topics': ['Физика полупроводников', 'Физика', 'Материаловедение'],
-        },
-
-        # ФТИ им. Иоффе - Сегнетоэлектрики
-        {
-            'title': 'Всероссийский симпозиум «Актуальные вопросы физики сегнетоэлектриков и родственных соединений»',
-            'organization': organizations['ФТИ им. Иоффе'],
-            'conference_type': 'national',
-            'format': 'offline',
-            'start_date': date(2026, 5, 13),
-            'end_date': date(2026, 5, 15),
-            'deadline': date(2026, 3, 1),
-            'location': 'Санкт-Петербург, ФТИ им. Иоффе',
-            'venue': 'ФТИ им. А.Ф. Иоффе',
-            'address': '194021, г. Санкт-Петербург, Политехническая ул., д. 26',
-            'description': 'Симпозиум посвящён актуальным вопросам физики сегнетоэлектриков и родственных соединений. Организаторы: ФТИ им. А.Ф. Иоффе, МИРЭА, СПбО РАН.',
-            'program': 'Пленарные и секционные доклады по физике сегнетоэлектриков, диэлектриков, пьезоэлектриков.',
-            'requirements': 'Тезисы принимаются до 1 марта 2026 г.',
-            'participation_terms': 'Оргвзнос: 4000 руб., для студентов 2000 руб.',
-            'contact_email': 'conferences@mail.ioffe.ru',
-            'contact_phone': '+7 (812) 297-22-45',
-            'contact_person': 'Лушников Сергей Германович',
-            'website': 'https://www.ioffe.ru/ferro-2026',
-            'is_featured': True,
-            'is_free': False,
-            'topics': ['Сегнетоэлектрики', 'Физика', 'Материаловедение'],
-        },
-
-        # ФТИ им. Иоффе - Наноуглерод и Алмаз
-        {
-            'title': 'Международная конференция «Наноуглерод и Алмаз»',
-            'organization': organizations['ФТИ им. Иоффе'],
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 6, 29),
-            'end_date': date(2026, 7, 3),
-            'deadline': date(2026, 4, 15),
-            'location': 'Санкт-Петербург',
-            'venue': 'ФТИ им. А.Ф. Иоффе / Академический университет',
-            'address': 'Санкт-Петербург',
-            'description': 'Международная конференция по наноуглероду, алмазу и родственным материалам. Организаторы: ФТИ им. А.Ф. Иоффе, ИГиЛ СО РАН, Академический университет им. Ж.И. Алфёрова, СПбГТИ(ТУ).',
-            'program': 'Секции по синтезу, характеризации и применению наноуглеродных материалов и алмаза.',
-            'requirements': 'Тезисы принимаются до 15 апреля 2026 г.',
-            'participation_terms': 'Оргвзнос: 6000 руб., для студентов 3000 руб.',
-            'contact_email': 'conferences@mail.ioffe.ru',
-            'contact_phone': '+7 (812) 292-73-77',
-            'contact_person': 'Воробьёва Ирина Владимировна',
-            'website': 'https://www.ioffe.ru/nanocarbon-2026',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Наноуглерод', 'Материаловедение', 'Физика'],
-        },
-
-        # ИФВЭ - Физика частиц
-        {
-            'title': 'Конференция «Физика частиц при средних и высоких энергиях»',
-            'organization': organizations['ИФВЭ'],
-            'conference_type': 'national',
-            'format': 'hybrid',
-            'start_date': date(2026, 6, 2),
-            'end_date': date(2026, 6, 5),
-            'deadline': date(2026, 4, 1),
-            'location': 'Московская обл., Протвино',
-            'venue': 'ИФВЭ, здание Отдела теоретической физики',
-            'address': 'Московская обл., г. Протвино, пл. Науки, д. 1',
-            'description': 'Конференция посвящена обзору экспериментальных исследований фундаментальных свойств материи (физики элементарных частиц) на Ускорительном комплексе У-70 и других отечественных установках, формированию актуальных направлений исследований в среднесрочной перспективе.',
-            'program': 'Доклады по основным тематикам (20-30 мин), стендовая секция. Рабочий язык: русский (презентации на русском или английском).',
-            'requirements': 'Тезисы докладов принимаются до 1 апреля 2026 г.',
-            'participation_terms': 'Участие преимущественно очное, возможно онлайн-подключение. Питание и проживание за счёт участников.',
-            'contact_email': 'ppihe2026@ihep.ru',
-            'contact_phone': '+7 (4967) 74-20-20',
-            'contact_person': 'Тюрин Николай Евгеньевич',
-            'website': 'https://indico.ihep.su/e/PPIHE2026',
-            'is_featured': True,
-            'is_free': True,
-            'topics': ['Физика частиц', 'Физика', 'Физика высоких энергий'],
-        },
-
-        # ОИВТ РАН - Молекулярная Динамика
-        {
-            'title': 'II Всероссийская конференция "Молекулярная Динамика 2026"',
-            'organization': organizations['ОИВТ РАН'],
-            'conference_type': 'national',
-            'format': 'offline',
-            'start_date': date(2026, 6, 28),
-            'end_date': date(2026, 7, 5),
-            'deadline': date(2026, 3, 1),
-            'location': 'Санкт-Петербург, г. Пушкин',
-            'venue': 'Конференц-центр',
-            'address': 'г. Пушкин, Санкт-Петербург',
-            'description': 'Всероссийская конференция по молекулярной динамике, организуемая ОИВТ РАН. Обсуждение современных методов молекулярного моделирования и их применений в различных областях науки.',
-            'program': 'Пленарные лекции, секционные доклады, школы для молодых учёных.',
-            'requirements': 'Окончание приёма тезисов докладов: до 1 марта 2026 г.',
-            'participation_terms': 'Оргвзнос: 5000 руб. Для студентов и аспирантов: 2500 руб.',
-            'contact_email': 'conferences@jiht.ru',
-            'contact_phone': '+7 (495) 484-23-33',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://jiht.ru/conferences/md2026',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Физика', 'Химия', 'Биология', 'Молекулярная биология'],
-        },
-
-        # ОИВТ РАН - Физика плазмы
-        {
-            'title': '53 МЕЖДУНАРОДНАЯ КОНФЕРЕНЦИЯ ПО ФИЗИКЕ ПЛАЗМЫ И УПРАВЛЯЕМОМУ ТЕРМОЯДЕРНОМУ СИНТЕЗУ',
-            'organization': organizations['ОИВТ РАН'],
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 3, 16),
-            'end_date': date(2026, 3, 20),
-            'deadline': date(2025, 11, 10),
-            'location': 'Московская обл., Звенигород',
-            'venue': 'Пансионат',
-            'address': 'г. Звенигород, Московская обл.',
-            'description': 'Крупнейшая конференция по физике плазмы и управляемому термоядерному синтезу, традиционно проводимая в Звенигороде. Ведущие учёные и специалисты представляют последние достижения в области физики плазмы, УТС и смежных направлениях.',
-            'program': 'Пленарные и секционные доклады, постерная сессия. Основные направления: физика высокотемпературной плазмы, УТС, физические аспекты термоядерных реакторов.',
-            'requirements': 'Докладчики должны были заполнить регистрационную форму до 10 ноября 2025 г.',
-            'participation_terms': 'Оргвзнос: 8000 руб., для студентов 4000 руб.',
-            'contact_email': 'plasma@jiht.ru',
-            'contact_phone': '+7 (495) 484-23-33',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://jiht.ru/plasma2026',
-            'is_featured': True,
-            'is_free': False,
-            'topics': ['Физика плазмы', 'Физика', 'Энергетика'],
-        },
-
         # НИУ ВШЭ - Языки, образование, развитие
         {
-            'title': 'V Международная научно-практическая конференция «Языки, образование, развитие» (HSE LED Conference)',
+            'title': 'V Международная научно-практическая конференция «Языки, образование, развитие»',
+            'short_title': 'LED Conference 2026',
             'organization': organizations['НИУ ВШЭ'],
-            'conference_type': 'international',
+            'event_type': 'conference',
             'format': 'online',
+            'participation_format': 'online',
             'start_date': date(2026, 4, 20),
             'end_date': date(2026, 4, 21),
             'deadline': date(2026, 3, 1),
@@ -1134,47 +1095,100 @@ def create_conferences(organizations, topics):
             'description': 'Конференция объединяет экспертов ведущих образовательных, научных и бизнес-организаций со всего мира, а также студентов и аспирантов для обсуждения современных задач и вопросов в сфере лингвистики. Три направления: языки, образование, развитие.',
             'program': 'Направления: фундаментальная и прикладная лингвистика, теория и практика обучения иностранным языкам, РКИ, современные тенденции языкового образования с учётом развития ИИ.',
             'requirements': 'Требования к оформлению тезисов на сайте конференции.',
+            'requirements_link': 'https://ling.hse.ru/ledconf/requirements',
             'participation_terms': 'Участие бесплатное. По итогам выпуск сборника статей (РИНЦ).',
             'contact_email': 'ledconf@hse.ru',
             'contact_phone': '+7 (495) 771-32-32',
-            'contact_person': 'Зырянова Елена Сергеевна',
             'website': 'https://ling.hse.ru/ledconf',
             'is_featured': True,
             'is_free': True,
             'topics': ['Лингвистика', 'Иностранные языки', 'Образование', 'Гуманитарные науки'],
         },
 
-        # УУНиТ - Телекоммуникации
+        # Технопром-2026 (форум) [citation:6]
         {
-            'title': 'Международная научно-техническая конференция по телекоммуникациям и информационным технологиям',
-            'organization': organizations['УУНиТ'],
-            'conference_type': 'international',
-            'format': 'hybrid',
-            'start_date': date(2026, 10, 12),
-            'end_date': date(2026, 10, 15),
-            'deadline': date(2026, 7, 1),
-            'location': 'Уфа, УУНиТ',
-            'venue': 'Уфимский университет науки и технологий',
-            'address': '450076, г. Уфа, ул. Заки Валиди, д. 32',
-            'description': 'Конференция, объединяющая ведущие вузы и предприятия в области телекоммуникаций и информационных технологий. Соорганизаторы: ПГУТИ, КНИТУ-КАИ, БГМУ, АО НПП «Полигон», ПАО «Башинформсвязь», ООО «Газпром Трансгаз Уфа», Сколтех и другие.',
-            'program': 'Пленарные доклады, секционные заседания, круглые столы с участием представителей бизнеса и промышленности.',
-            'requirements': 'Тезисы докладов принимаются до 1 июля 2026 г.',
-            'participation_terms': 'Оргвзнос: 7000 руб., для студентов 3000 руб.',
-            'contact_email': 'science@uust.ru',
-            'contact_phone': '+7 (347) 272-63-70',
-            'contact_person': 'Султанов Альберт Ханович',
-            'website': 'https://uust.ru/ptitt',
+            'title': 'Международный форум «Технопром-2026»',
+            'short_title': 'Технопром-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'forum',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 6, 15),
+            'end_date': date(2026, 6, 18),
+            'deadline': date(2026, 5, 1),
+            'location': 'Новосибирск',
+            'venue': 'Экспоцентр Новосибирск',
+            'address': 'г. Новосибирск, ул. Станционная, 104',
+            'description': 'Международный форум «Технопром-2026». Главная тема — «Российская наука — основа технологического лидерства». Участники обсудят ключевые направления развития экономики от искусственного интеллекта и энергетики до медицины будущего и биоинженерии.',
+            'program': 'Национальный форум трансфера технологий, Сибирская венчурная ярмарка, международный форум сотрудничества Россия — Африка.',
+            'requirements_link': 'https://форумтехнопром.рф/participants',
+            'participation_terms': 'Подробная программа и регистрация на официальном сайте.',
+            'contact_email': 'info@technoprom.ru',
+            'website': 'https://форумтехнопром.рф',
             'is_featured': True,
             'is_free': False,
-            'topics': ['Телекоммуникации', 'Информатика', 'Радиофотоника', 'Технические науки'],
+            'topics': ['Технические науки', 'Информатика', 'Искусственный интеллект', 'Медицина', 'Энергетика'],
+        },
+
+        # АлтГУ - Круглый стол по фронтирным территориям [citation:8]
+        {
+            'title': 'Всероссийский круглый стол «Фронтирные территории: социо-культурные и географические пространства пограничных исследований»',
+            'short_title': 'Фронтир-2026',
+            'organization': organizations['АлтГУ'],
+            'event_type': 'round_table',
+            'format': 'offline',
+            'participation_format': 'offline',
+            'start_date': date(2026, 10, 15),
+            'end_date': date(2026, 10, 16),
+            'deadline': date(2026, 9, 1),
+            'location': 'Барнаул',
+            'venue': 'Алтайский государственный университет',
+            'address': '656049, г. Барнаул, проспект Ленина, д. 61',
+            'description': 'Всероссийский круглый стол «Фронтирные территории: социо-культурные и географические пространства пограничных исследований». Мероприятие проводится Институтом гуманитарных наук АлтГУ при участии ФГБОУ ВО «РОСБИОТЕХ».',
+            'program': 'Доклады и дискуссии по социо-культурным и географическим аспектам исследования фронтирных территорий.',
+            'requirements': 'Заявки принимаются до 1 сентября 2026 г.',
+            'participation_terms': 'Предполагаемое число участников: 50, в т.ч. иногородних - 10.',
+            'contact_email': 'omelchenko@socio.asu.ru',
+            'contact_phone': '8 (913) 214-81-19',
+            'contact_person': 'Омельченко Д.А.',
+            'website': 'http://events.asu.ru/?event=999',
+            'is_featured': False,
+            'is_free': True,
+            'topics': ['Фронтирные территории', 'Гуманитарные науки', 'Социально-гуманитарные науки', 'География'],
+        },
+
+        # Синхротронное излучение (конференция) [citation:5]
+        {
+            'title': 'Международная конференция по исследованиям синхротронного излучения',
+            'short_title': 'СИ-2026',
+            'organization': organizations['СО РАН'],
+            'event_type': 'conference',
+            'format': 'hybrid',
+            'participation_format': 'hybrid',
+            'start_date': date(2026, 6, 15),
+            'end_date': date(2026, 6, 19),
+            'deadline': date(2026, 5, 1),
+            'location': 'Новосибирск / онлайн',
+            'venue': 'Институт ядерной физики СО РАН',
+            'address': 'г. Новосибирск, проспект Академика Лаврентьева, 11',
+            'description': 'Международная конференция по исследованиям синхротронного излучения. Цель конференции — обсуждение современных тенденций и будущих достижений в области исследований синхротронного излучения, включая разработку установок и приборов для пучков, фундаментальные исследования и промышленные применения.',
+            'program': 'Пленарные доклады, секционные заседания, постерная сессия. Рабочий язык: английский.',
+            'requirements': 'Регистрация и подача тезисов на английском языке до 1 мая 2026 г.',
+            'participation_terms': 'Без оргвзноса. Гибридный формат (онлайн и очное участие).',
+            'contact_email': 'sr2026@inp.nsk.ru',
+            'website': 'https://sr2026.inp.nsk.ru',
+            'is_featured': True,
+            'is_free': True,
+            'topics': ['Синхротронное излучение', 'Физика', 'Технические науки'],
         },
 
         # Прошедшие конференции (для тестирования фильтров)
         {
             'title': 'XLVII Международная Звенигородская конференция по физике плазмы и УТС',
             'organization': organizations['ОИВТ РАН'],
-            'conference_type': 'international',
+            'event_type': 'conference',
             'format': 'offline',
+            'participation_format': 'offline',
             'start_date': date(2024, 3, 18),
             'end_date': date(2024, 3, 22),
             'deadline': date(2024, 1, 15),
@@ -1186,8 +1200,9 @@ def create_conferences(organizations, topics):
         {
             'title': 'XIII ВСЕРОССИЙСКАЯ КОНФЕРЕНЦИЯ ПО ФИЗИЧЕСКОЙ ЭЛЕКТРОНИКЕ',
             'organization': organizations['ОИВТ РАН'],
-            'conference_type': 'national',
+            'event_type': 'conference',
             'format': 'offline',
+            'participation_format': 'offline',
             'start_date': date(2024, 9, 25),
             'end_date': date(2024, 9, 29),
             'deadline': date(2024, 9, 9),
@@ -1203,339 +1218,18 @@ def create_conferences(organizations, topics):
     for conf_data in conferences_data:
         topics_list = conf_data.pop('topics', [])
 
-        # Проверяем, существует ли уже конференция
         title = conf_data['title']
         organization = conf_data['organization']
 
         # Устанавливаем статус в зависимости от дат
         today = date.today()
-        if 'start_date' in conf_data:
+        if 'start_date' in conf_data and 'end_date' in conf_data:
             if conf_data['end_date'] < today:
                 conf_data['status'] = Conference.Status.ARCHIVED
             elif conf_data['start_date'] <= today <= conf_data['end_date']:
                 conf_data['status'] = Conference.Status.PUBLISHED
             else:
                 conf_data['status'] = Conference.Status.PUBLISHED
-        else:
-            conf_data['status'] = Conference.Status.PUBLISHED
-
-        # Добавляем поля по умолчанию, если их нет
-        if 'short_title' not in conf_data:
-            conf_data['short_title'] = ''
-        if 'venue' not in conf_data:
-            conf_data['venue'] = ''
-        if 'address' not in conf_data:
-            conf_data['address'] = ''
-        if 'program' not in conf_data:
-            conf_data['program'] = ''
-        if 'requirements' not in conf_data:
-            conf_data['requirements'] = ''
-        if 'participation_terms' not in conf_data:
-            conf_data['participation_terms'] = ''
-        if 'contact_phone' not in conf_data:
-            conf_data['contact_phone'] = ''
-        if 'contact_person' not in conf_data:
-            conf_data['contact_person'] = ''
-        if 'website' not in conf_data:
-            conf_data['website'] = ''
-        if 'is_featured' not in conf_data:
-            conf_data['is_featured'] = False
-        if 'is_free' not in conf_data:
-            conf_data['is_free'] = True
-
-        conf, created = Conference.objects.get_or_create(
-            title=title,
-            organization=organization,
-            defaults=conf_data
-        )
-
-        if created:
-            # Добавляем тематики
-            for topic_name in topics_list:
-                if topic_name in topics:
-                    conf.topics.add(topics[topic_name])
-            conf.save()
-            print_success(f"Создана конференция: {conf.title[:60]}... ({conf.organization.short_name})")
-            conferences.append(conf)
-        else:
-            print_info(f"Конференция уже существует: {conf.title[:40]}...")
-
-    return conferences
-
-
-def create_additional_conferences(organizations, topics):
-    """Создание дополнительных конференций из новых источников"""
-    print_header("ДОБАВЛЕНИЕ НОВЫХ КОНФЕРЕНЦИЙ")
-
-    today = date.today()
-    new_conferences_data = [
-        # 1. Неравновесные процессы, плазма, горение и атмосферные явления (ЦИАМ + МЦХФ)
-        {
-            'title': '12 Международный симпозиум «Неравновесные процессы, плазма, горение и атмосферные явления»',
-            'organization': organizations.get('ЦИАМ') or organizations.get('МЦХФ'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 10, 5),
-            'end_date': date(2026, 10, 9),
-            'deadline': date(2026, 6, 1),
-            'location': 'Сочи, Адлер',
-            'venue': 'Отель',
-            'address': 'г. Сочи, Адлерский район, Россия',
-            'description': 'Международный симпозиум, посвященный неравновесным процессам, физике плазмы, горению и атмосферным явлениям. Организаторы: НП МЦХФ им. Н.Н. Семенова и ЦИАМ им. П.И. Баранова. В программный комитет входят ведущие учёные из России, Беларуси и Великобритании.',
-            'program': 'Пленарные доклады, секционные заседания по физике плазмы, горению, неравновесным процессам, атмосферным явлениям.',
-            'requirements': 'Требования к оформлению тезисов на сайте симпозиума.',
-            'participation_terms': 'Оргвзнос уточняется на сайте мероприятия.',
-            'contact_email': 'nepcap2024@ciam.ru',
-            'contact_phone': '+7 (495) 361-50-00',
-            'contact_person': 'Ланшин Александр Иванович',
-            'website': 'http://nepcap2024.ciam.ru',
-            'is_featured': True,
-            'is_free': False,
-            'topics': ['Физика плазмы', 'Физика', 'Химия', 'Технические науки'],
-        },
-
-        # 2. SCIENCE ONLINE XXIII (НЭБ)
-        {
-            'title': 'XXIII Международная конференция SCIENCE ONLINE «Наука в цифре: новые горизонты оценки исследований и искусственный интеллект»',
-            'organization': organizations.get('НЭБ'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 9, 26),
-            'end_date': date(2026, 10, 3),
-            'deadline': date(2026, 8, 24),
-            'location': 'Сочи, Роза-Хутор',
-            'venue': 'Golden Tulip 4*',
-            'address': 'Сочи, курорт Роза-Хутор, Россия',
-            'description': 'Главное событие в сфере информационного сопровождения науки, образования и инновационных отраслей промышленности. Конференция собирает руководителей университетов, академических институтов, издателей, библиотекарей, специалистов по наукометрии и ИИ. Тема 2026 года: "Наука в цифре: новые горизонты оценки исследований и искусственный интеллект".',
-            'program': 'Секции: цифровые экосистемы для научных исследований, аналитические инструменты и ИИ в наукометрии, этические аспекты внедрения ИИ, открытая наука, роль научных библиотек, презентация новых продуктов eLIBRARY.RU.',
-            'requirements': 'Заявки на выступления принимаются до 15 августа 2026 г.',
-            'participation_terms': 'Участие платное. Регистрация до 24 августа 2026 г.',
-            'contact_email': 'info@elibrary.ru',
-            'contact_phone': '+7 (495) 123-45-67',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://elibrary.ru',
-            'is_featured': True,
-            'is_free': False,
-            'topics': ['Информатика', 'Искусственный интеллект', 'Цифровизация', 'Образование'],
-        },
-
-        # 3. Люминесценция (ФТИ им. Иоффе)
-        {
-            'title': 'Всероссийская конференция с международным участием по люминесценции',
-            'organization': organizations.get('ФТИ им. Иоффе'),
-            'conference_type': 'national',
-            'format': 'offline',
-            'start_date': date(2026, 5, 18),
-            'end_date': date(2026, 5, 22),
-            'deadline': date(2026, 3, 1),
-            'location': 'Санкт-Петербург',
-            'venue': 'ФТИ им. А.Ф. Иоффе / Академический университет',
-            'address': 'Санкт-Петербург, Россия',
-            'description': 'Всероссийская конференция с международным участием по люминесценции, организуемая ФТИ им. А.Ф. Иоффе и Академическим университетом им. Ж.И. Алфёрова. Посвящена фундаментальным и прикладным аспектам люминесценции, оптике и спектроскопии.',
-            'program': 'Секции по фотолюминесценции, электролюминесценции, катодолюминесценции, люминесценции наноструктур и применению люминесцентных материалов.',
-            'requirements': 'Тезисы принимаются до 1 марта 2026 г.',
-            'participation_terms': 'Оргвзнос: 5000 руб., для студентов 2500 руб.',
-            'contact_email': 'orekhova@mail.ioffe.ru',
-            'contact_phone': '+7 (960) 243-92-38',
-            'contact_person': 'Орехова Ксения Николаевна',
-            'website': 'https://www.ioffe.ru/luminescence2026',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Физика', 'Физика полупроводников', 'Материаловедение'],
-        },
-
-        # 4. Dielectric and Ferroelectric Materials (ФТИ им. Иоффе)
-        {
-            'title': '6th Russia – China Workshop on Dielectric and Ferroelectric Materials',
-            'organization': organizations.get('ФТИ им. Иоффе'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 9, 13),
-            'end_date': date(2026, 9, 17),
-            'deadline': date(2026, 6, 1),
-            'location': 'Санкт-Петербург',
-            'venue': 'ФТИ им. А.Ф. Иоффе',
-            'address': 'Санкт-Петербург, Россия',
-            'description': '6-й Российско-Китайский воркшоп по диэлектрическим и сегнетоэлектрическим материалам. Мероприятие объединяет ведущих учёных России и Китая для обсуждения последних достижений в области физики диэлектриков, сегнетоэлектриков и родственных материалов.',
-            'program': 'Пленарные доклады, секционные заседания, постерная сессия.',
-            'requirements': 'Тезисы принимаются до 1 июня 2026 г.',
-            'participation_terms': 'Оргвзнос: 6000 руб.',
-            'contact_email': 'koroleva@mail.ioffe.ru',
-            'contact_phone': '+7 (812) 292-73-77',
-            'contact_person': 'Королева Е.Ю.',
-            'website': 'https://www.ioffe.ru/dielec2026',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Сегнетоэлектрики', 'Физика', 'Материаловедение'],
-        },
-
-        # 5. Шаг в будущее 2026 (МГТУ им. Баумана)
-        {
-            'title': 'Всероссийский форум научной молодёжи «Шаг в будущее» 2026',
-            'organization': organizations.get('МГТУ им. Баумана'),
-            'conference_type': 'national',
-            'format': 'offline',
-            'start_date': date(2026, 3, 23),
-            'end_date': date(2026, 3, 27),
-            'deadline': date(2026, 1, 15),
-            'location': 'Москва',
-            'venue': '14 научных центров и 11 университетов',
-            'address': 'Москва, Россия',
-            'description': 'Крупнейшее мероприятие для молодых исследователей и школьников, объединяющее 52 научные секции по всем направлениям: от инженерных наук до социально-гуманитарных. Организаторы: МГТУ им. Баумана, Российское молодёжное политехническое общество, при участии ведущих институтов РАН.',
-            'program': '52 секции по 4 симпозиумам: Инженерные науки, Естественные науки, Математика и ИТ, Социально-гуманитарные науки. Участники: школьники, студенты, молодые учёные.',
-            'requirements': 'Подробные требования к работам на сайте форума.',
-            'participation_terms': 'Участие бесплатное. Регистрация открыта на сайте форума.',
-            'contact_email': 'info@step-into-the-future.ru',
-            'contact_phone': '+7 (499) 263-65-05',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://www.step-into-the-future.ru',
-            'is_featured': True,
-            'is_free': True,
-            'topics': [
-                'Технические науки', 'Физика', 'Химия', 'Биология',
-                'Математика', 'Информатика', 'Гуманитарные науки',
-                'Экономика', 'Образование'
-            ],
-        },
-
-        # 6. International Cryptology Conference (международная, для разнообразия)
-        {
-            'title': '46th International Cryptology Conference (Crypto 2026)',
-            'organization': organizations.get('ФТИ им. Иоффе'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 8, 17),
-            'end_date': date(2026, 8, 20),
-            'deadline': date(2026, 2, 15),
-            'location': 'США, Санта-Барбара',
-            'venue': 'University of California',
-            'address': 'Santa Barbara, California, USA',
-            'description': 'Ведущая международная конференция по криптологии, посвященная фундаментальным и прикладным аспектам криптографии. Рейтинг CORE A+.',
-            'program': 'Пленарные доклады, секционные заседания по теории криптографии, криптоанализу, протоколам, реализации криптосистем.',
-            'requirements': 'Требования на сайте конференции.',
-            'participation_terms': 'Регистрация открыта на сайте.',
-            'contact_email': 'info@crypto2026.org',
-            'contact_phone': '',
-            'contact_person': 'Программный комитет',
-            'website': 'https://crypto.iacr.org/2026/',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Информатика', 'Математика', 'Искусственный интеллект'],
-        },
-
-        # 7. ECML-PKDD 2026 (международная по машинному обучению)
-        {
-            'title': 'European Conference on Machine Learning and Data Mining (ECML-PKDD 2026)',
-            'organization': organizations.get('ФТИ им. Иоффе'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 9, 7),
-            'end_date': date(2026, 9, 11),
-            'deadline': date(2026, 3, 14),
-            'location': 'Италия, Неаполь',
-            'venue': 'Конференц-центр',
-            'address': 'Naples, Italy',
-            'description': 'Ведущая европейская конференция по машинному обучению и интеллектуальному анализу данных, рейтинг CORE A.',
-            'program': 'Основная конференция, воркшопы, туториалы, соревнования по анализу данных.',
-            'requirements': 'Дедлайн подачи работ: 14 марта 2026 г.',
-            'participation_terms': 'Регистрация открыта на сайте.',
-            'contact_email': 'info@ecmlpkdd2026.org',
-            'contact_phone': '',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://ecmlpkdd.org/2026/',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Информатика', 'Искусственный интеллект', 'Математика'],
-        },
-
-        # 8. SIGIR 2026 (международная по информационному поиску)
-        {
-            'title': '46th International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR 2026)',
-            'organization': organizations.get('ФТИ им. Иоффе'),
-            'conference_type': 'international',
-            'format': 'offline',
-            'start_date': date(2026, 7, 15),
-            'end_date': date(2026, 7, 19),
-            'deadline': date(2026, 1, 22),
-            'location': 'США',
-            'venue': 'TBD',
-            'address': 'USA',
-            'description': 'Ведущая международная конференция по информационному поиску, рейтинг CORE A*.',
-            'program': 'Пленарные доклады, секции по поиску информации, рекомендательным системам, NLP.',
-            'requirements': 'Дедлайн подачи работ прошёл 22 января 2026 г.',
-            'participation_terms': 'Регистрация открыта на сайте.',
-            'contact_email': 'info@sigir2026.org',
-            'contact_phone': '',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://sigir2026.org/',
-            'is_featured': False,
-            'is_free': False,
-            'topics': ['Информатика', 'Искусственный интеллект'],
-        },
-
-        # 9. Криосфера и Арктические исследования (дополнительно к существующим)
-        {
-            'title': 'Международная конференция «Криосфера и Арктические исследования: новые вызовы и технологии»',
-            'organization': organizations.get('МГУ'),
-            'conference_type': 'international',
-            'format': 'hybrid',
-            'start_date': date(2026, 11, 15),
-            'end_date': date(2026, 11, 18),
-            'deadline': date(2026, 9, 1),
-            'location': 'Москва / онлайн',
-            'venue': 'МГУ, Географический факультет',
-            'address': 'Москва, Ленинские горы, д. 1',
-            'description': 'Конференция, посвящённая исследованиям криосферы, Арктического региона, изменению климата и современным технологиям мониторинга.',
-            'program': 'Секции по гляциологии, мерзлотоведению, полярным исследованиям, дистанционному зондированию.',
-            'requirements': 'Тезисы принимаются до 1 сентября 2026 г.',
-            'participation_terms': 'Участие бесплатное, онлайн-участие возможно.',
-            'contact_email': 'cryo@geogr.msu.ru',
-            'contact_phone': '+7 (495) 939-10-00',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://www.geogr.msu.ru/cryo2026',
-            'is_featured': True,
-            'is_free': True,
-            'topics': ['Криосфера', 'Арктические исследования', 'География', 'Науки о Земле'],
-        },
-
-        # 10. Энергетика будущего (ОИВТ РАН + МЭИ)
-        {
-            'title': 'Всероссийская конференция «Энергетика будущего: новые технологии и устойчивое развитие»',
-            'organization': organizations.get('ОИВТ РАН'),
-            'conference_type': 'national',
-            'format': 'hybrid',
-            'start_date': date(2026, 10, 20),
-            'end_date': date(2026, 10, 23),
-            'deadline': date(2026, 8, 1),
-            'location': 'Москва',
-            'venue': 'ОИВТ РАН / НИУ МЭИ',
-            'address': 'Москва, Россия',
-            'description': 'Конференция по новым технологиям в энергетике, возобновляемым источникам энергии, водородной энергетике и устойчивому развитию.',
-            'program': 'Секции по возобновляемой энергетике, водородным технологиям, энергоэффективности, тепловой энергетике.',
-            'requirements': 'Тезисы принимаются до 1 августа 2026 г.',
-            'participation_terms': 'Оргвзнос: 6000 руб.',
-            'contact_email': 'energy@jiht.ru',
-            'contact_phone': '+7 (495) 484-23-33',
-            'contact_person': 'Оргкомитет',
-            'website': 'https://jiht.ru/energy2026',
-            'is_featured': True,
-            'is_free': False,
-            'topics': ['Энергетика', 'Возобновляемая энергетика', 'Технические науки'],
-        },
-    ]
-
-    conferences = []
-    for conf_data in new_conferences_data:
-        # Проверяем организацию
-        if not conf_data['organization']:
-            print_warning(f"Пропущена конференция '{conf_data['title'][:30]}...' - организация не найдена")
-            continue
-
-        topics_list = conf_data.pop('topics', [])
-
-        # Устанавливаем статус
-        if conf_data['end_date'] < today:
-            conf_data['status'] = Conference.Status.ARCHIVED
         else:
             conf_data['status'] = Conference.Status.PUBLISHED
 
@@ -1550,6 +1244,10 @@ def create_additional_conferences(organizations, topics):
             conf_data['program'] = ''
         if 'requirements' not in conf_data:
             conf_data['requirements'] = ''
+        if 'requirements_link' not in conf_data:
+            conf_data['requirements_link'] = ''
+        if 'requirements_file' not in conf_data:
+            conf_data['requirements_file'] = None
         if 'participation_terms' not in conf_data:
             conf_data['participation_terms'] = ''
         if 'contact_phone' not in conf_data:
@@ -1558,27 +1256,37 @@ def create_additional_conferences(organizations, topics):
             conf_data['contact_person'] = ''
         if 'website' not in conf_data:
             conf_data['website'] = ''
+        if 'call_for_papers' not in conf_data:
+            conf_data['call_for_papers'] = ''
+        if 'poster' not in conf_data:
+            conf_data['poster'] = None
         if 'is_featured' not in conf_data:
             conf_data['is_featured'] = False
         if 'is_free' not in conf_data:
             conf_data['is_free'] = True
+        if 'has_publications' not in conf_data:
+            conf_data['has_publications'] = True
+        if 'publication_indexing' not in conf_data:
+            conf_data['publication_indexing'] = ''
+        if 'participation_format' not in conf_data:
+            conf_data['participation_format'] = Conference.ParticipationFormat.HYBRID
 
         conf, created = Conference.objects.get_or_create(
-            title=conf_data['title'],
-            organization=conf_data['organization'],
+            title=title,
+            organization=organization,
             defaults=conf_data
         )
 
         if created:
-            # Добавляем тематики
             for topic_name in topics_list:
                 if topic_name in topics:
                     conf.topics.add(topics[topic_name])
             conf.save()
-            print_success(f"Создана конференция: {conf.title[:50]}... ({conf.organization.short_name})")
+            print_success(
+                f"Создано мероприятие: {conf.title[:60]}... ({conf.organization.short_name}) - {conf.get_event_type_display()}")
             conferences.append(conf)
         else:
-            print_info(f"Конференция уже существует: {conf.title[:40]}...")
+            print_info(f"Мероприятие уже существует: {conf.title[:40]}...")
 
     return conferences
 
@@ -1615,7 +1323,7 @@ def create_additional_users():
             'first_name': 'Алексей',
             'last_name': 'Смирнов',
             'middle_name': '',
-            'affiliation': 'МФТИ, Физтех-школа физики и исследований им. Ландау',
+            'affiliation': 'МФТИ, Физтех-школа физики',
             'academic_degree': 'student',
         },
         {
@@ -1625,7 +1333,7 @@ def create_additional_users():
             'first_name': 'Дмитрий',
             'last_name': 'Козлов',
             'middle_name': 'Петрович',
-            'affiliation': 'НИЯУ МИФИ, Институт ядерной физики и технологий',
+            'affiliation': 'НИЯУ МИФИ, Институт ядерной физики',
             'academic_degree': 'phd_student',
         },
         {
@@ -1688,6 +1396,36 @@ def create_additional_users():
             'affiliation': 'MIT, Department of Physics',
             'academic_degree': 'phd',
         },
+        {
+            'username': 'alekseeva_ms',
+            'email': 'maria.alekseeva@science.ru',
+            'password': 'Science2026!',
+            'first_name': 'Мария',
+            'last_name': 'Алексеева',
+            'middle_name': 'Сергеевна',
+            'affiliation': 'Институт земной коры СО РАН',
+            'academic_degree': 'phd',
+        },
+        {
+            'username': 'popov_ai',
+            'email': 'a.popov@geology.ru',
+            'password': 'Geology2026!',
+            'first_name': 'Александр',
+            'last_name': 'Попов',
+            'middle_name': 'Игоревич',
+            'affiliation': 'Алтайский государственный университет',
+            'academic_degree': 'phd_student',
+        },
+        {
+            'username': 'semenov_dv',
+            'email': 'd.semenov@energy.ru',
+            'password': 'Energy2026!',
+            'first_name': 'Дмитрий',
+            'last_name': 'Семёнов',
+            'middle_name': 'Владимирович',
+            'affiliation': 'Объединенный институт высоких температур РАН',
+            'academic_degree': 'phd',
+        },
     ]
 
     for user_data in users_data:
@@ -1710,7 +1448,7 @@ def create_additional_users():
 
 def main():
     """Главная функция"""
-    print_header("ЗАПОЛНЕНИЕ БАЗЫ ДАННЫХ ТЕСТОВЫМИ ДАННЫМИ")
+    print_header("ЗАПОЛНЕНИЕ БАЗЫ ДАННЫХ АКТУАЛЬНЫМИ ТЕСТОВЫМИ ДАННЫМИ")
     print_info("Начинаем создание тестовых данных...")
 
     # Создаем тематики
@@ -1719,20 +1457,11 @@ def main():
     # Проверяем тематики
     check_topic_slugs()
 
-    # Создаем основные организации
+    # Создаем организации
     organizations = create_organizations_and_users()
 
-    # Добавляем новые организации
-    new_orgs = create_additional_organizations()
-
-    # Объединяем словари организаций
-    organizations.update(new_orgs)
-
-    # Создаем основные конференции
+    # Создаем конференции и мероприятия
     conferences = create_conferences(organizations, topics)
-
-    # Добавляем новые конференции
-    new_conferences = create_additional_conferences(organizations, topics)
 
     # Создаем дополнительных участников
     create_additional_users()
@@ -1740,11 +1469,47 @@ def main():
     print_header("ИТОГИ ЗАПОЛНЕНИЯ")
     print_success(f"Всего тематик: {Topic.objects.count()}")
     print_success(f"Всего организаций: {Organization.objects.filter(is_active=True).count()}")
-    print_success(f"Всего конференций: {Conference.objects.count()}")
+    print_success(f"Всего мероприятий: {Conference.objects.count()}")
     print_success(f"Всего пользователей: {CustomUser.objects.count()}")
+
+    # Статистика по типам мероприятий (ИСПРАВЛЕННЫЙ БЛОК)
+    print_info("\nСтатистика по типам мероприятий:")
+    from django.db.models import Count  # Добавляем импорт здесь
+    event_type_counts = Conference.objects.values('event_type').annotate(count=Count('id'))
+    for item in event_type_counts:
+        event_type = item['event_type']
+        count = item['count']
+        type_display = dict(Conference.EventType.choices).get(event_type, event_type)
+        print_info(f"  {type_display}: {count}")
+
     print_info(f"Из них организаций-пользователей: {Organization.objects.filter(is_active=True).count()}")
     print_info(
         f"Из них обычных участников: {CustomUser.objects.filter(is_superuser=False, organization__isnull=True).count()}")
+
+    print("\n" + Colors.BOLD + "✅ База данных успешно заполнена актуальными данными на 2026-2027 годы!" + Colors.ENDC)
+    print("\nТестовые учетные записи:")
+    print("  Организации (логин / пароль):")
+    print("  - msu_org / MsuOrg2024! (МГУ)")
+    print("  - spbu_org / SpbuOrg2024! (СПбГУ)")
+    print("  - mipt_org / MiptOrg2024! (МФТИ)")
+    print("  - jiht_org / JihtOrg2024! (ОИВТ РАН)")
+    print("  - bmstu_org / Bmstu2026! (МГТУ им. Баумана)")
+    print("  - sbras_org / Sbras2026! (СО РАН)")
+    print("  - crust_org / Crust2026! (ИЗК СО РАН)")
+    print("  - asu_org / Asu2026! (АлтГУ)")
+
+    print("\n  Участники (логин / пароль):")
+    print("  - ivanov_ii / Test123!@# (Иван Иванов, МГУ)")
+    print("  - petrova_ma / Science2024! (Мария Петрова, СПбГУ)")
+    print("  - smirnov_student / Student2025! (Алексей Смирнов, МФТИ)")
+    print("  - alekseeva_ms / Science2026! (Мария Алексеева, ИЗК СО РАН)")
+    print("  - semenov_dv / Energy2026! (Дмитрий Семёнов, ОИВТ РАН)")
+
+    print("\nАктуальные мероприятия 2026 года:")
+    upcoming = Conference.objects.filter(status=Conference.Status.PUBLISHED, start_date__gte=date.today()).order_by(
+        'start_date')[:5]
+    for conf in upcoming:
+        print(f"  • {conf.start_date.strftime('%d.%m')} - {conf.title[:60]}... ({conf.get_event_type_display()})")
 
 
 if __name__ == '__main__':

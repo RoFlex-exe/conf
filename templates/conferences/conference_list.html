@@ -2,7 +2,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Конференции{% endblock %}
+{% block title %}Мероприятия{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -20,6 +20,22 @@
                         <input type="text" name="q" class="form-control" value="{{ current_filters.q }}" placeholder="Название или описание">
                     </div>
 
+                    <!-- Тип мероприятия -->
+                    <div class="mb-3">
+                        <label class="form-label">Тип мероприятия</label>
+                        <select name="event_type" class="form-select">
+                            <option value="">Все типы</option>
+                            <option value="conference" {% if current_filters.event_type == 'conference' %}selected{% endif %}>📝 Конференции ({{ event_type_stats.conference }})</option>
+                            <option value="forum" {% if current_filters.event_type == 'forum' %}selected{% endif %}>🗣️ Форумы ({{ event_type_stats.forum }})</option>
+                            <option value="seminar" {% if current_filters.event_type == 'seminar' %}selected{% endif %}>📚 Семинары ({{ event_type_stats.seminar }})</option>
+                            <option value="round_table" {% if current_filters.event_type == 'round_table' %}selected{% endif %}>🔄 Круглые столы ({{ event_type_stats.round_table }})</option>
+                            <option value="symposium" {% if current_filters.event_type == 'symposium' %}selected{% endif %}>🎯 Симпозиумы</option>
+                            <option value="congress" {% if current_filters.event_type == 'congress' %}selected{% endif %}>🌍 Конгрессы</option>
+                            <option value="school" {% if current_filters.event_type == 'school' %}selected{% endif %}>🎓 Школы-конференции</option>
+                            <option value="workshop" {% if current_filters.event_type == 'workshop' %}selected{% endif %}>🔧 Мастер-классы</option>
+                        </select>
+                    </div>
+
                     <!-- Тематика -->
                     <div class="mb-3">
                         <label class="form-label">Тематика</label>
@@ -33,26 +49,25 @@
                         </select>
                     </div>
 
-                    <!-- Тип конференции -->
+                    <!-- Формат проведения -->
                     <div class="mb-3">
-                        <label class="form-label">Тип</label>
-                        <select name="type" class="form-select">
-                            <option value="">Все типы</option>
-                            <option value="international" {% if current_filters.type == 'international' %}selected{% endif %}>Международная</option>
-                            <option value="national" {% if current_filters.type == 'national' %}selected{% endif %}>Всероссийская</option>
-                            <option value="regional" {% if current_filters.type == 'regional' %}selected{% endif %}>Региональная</option>
-                            <option value="university" {% if current_filters.type == 'university' %}selected{% endif %}>Вузовская</option>
+                        <label class="form-label">Формат проведения</label>
+                        <select name="format" class="form-select">
+                            <option value="">Все форматы</option>
+                            <option value="offline" {% if current_filters.format == 'offline' %}selected{% endif %}>🏛️ Очная</option>
+                            <option value="online" {% if current_filters.format == 'online' %}selected{% endif %}>💻 Онлайн</option>
+                            <option value="hybrid" {% if current_filters.format == 'hybrid' %}selected{% endif %}>🔄 Гибридная</option>
                         </select>
                     </div>
 
-                    <!-- Формат -->
+                    <!-- Формат участия -->
                     <div class="mb-3">
-                        <label class="form-label">Формат</label>
-                        <select name="format" class="form-select">
-                            <option value="">Все форматы</option>
-                            <option value="offline" {% if current_filters.format == 'offline' %}selected{% endif %}>Очная</option>
-                            <option value="online" {% if current_filters.format == 'online' %}selected{% endif %}>Онлайн</option>
-                            <option value="hybrid" {% if current_filters.format == 'hybrid' %}selected{% endif %}>Гибридная</option>
+                        <label class="form-label">Формат участия</label>
+                        <select name="participation" class="form-select">
+                            <option value="">Любой</option>
+                            <option value="offline" {% if current_filters.participation == 'offline' %}selected{% endif %}>🏛️ Можно очно</option>
+                            <option value="online" {% if current_filters.participation == 'online' %}selected{% endif %}>💻 Можно дистанционно</option>
+                            <option value="hybrid" {% if current_filters.participation == 'hybrid' %}selected{% endif %}>✅ Можно выбрать</option>
                         </select>
                     </div>
 
@@ -60,10 +75,10 @@
                     <div class="mb-3">
                         <label class="form-label">Период</label>
                         <select name="period" class="form-select">
-                            <option value="">Все конференции</option>
-                            <option value="upcoming" {% if current_filters.period == 'upcoming' %}selected{% endif %}>Предстоящие</option>
-                            <option value="ongoing" {% if current_filters.period == 'ongoing' %}selected{% endif %}>Идут сейчас</option>
-                            <option value="past" {% if current_filters.period == 'past' %}selected{% endif %}>Прошедшие</option>
+                            <option value="">Все мероприятия</option>
+                            <option value="upcoming" {% if current_filters.period == 'upcoming' %}selected{% endif %}>⏳ Предстоящие</option>
+                            <option value="ongoing" {% if current_filters.period == 'ongoing' %}selected{% endif %}>🔴 Идут сейчас</option>
+                            <option value="past" {% if current_filters.period == 'past' %}selected{% endif %}>✅ Прошедшие</option>
                         </select>
                     </div>
 
@@ -84,30 +99,68 @@
                 </form>
             </div>
         </div>
+
+        <!-- Статистика по типам -->
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Статистика</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Всего мероприятий:</strong> {{ total_conferences }}</p>
+                <p><strong>Предстоит:</strong> {{ upcoming_count }}</p>
+                <hr>
+                <p class="mb-1"><strong>По типам:</strong></p>
+                <p class="mb-0 small">📝 Конференции: {{ event_type_stats.conference }}</p>
+                <p class="mb-0 small">🗣️ Форумы: {{ event_type_stats.forum }}</p>
+                <p class="mb-0 small">📚 Семинары: {{ event_type_stats.seminar }}</p>
+                <p class="mb-0 small">🔄 Круглые столы: {{ event_type_stats.round_table }}</p>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-9">
         <!-- Заголовок и статистика -->
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1>Конференции</h1>
+            <h1>Научные мероприятия</h1>
             <div class="text-muted">
                 Найдено: {{ conferences.paginator.count }}
                 ({{ upcoming_count }} предстоящих)
             </div>
         </div>
 
-        <!-- Список конференций -->
+        <!-- Список мероприятий -->
         {% for conference in conferences %}
             <div class="card mb-3">
                 <div class="card-body">
-                    <h5 class="card-title">
-                        <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
-                            {{ conference.title }}
-                        </a>
-                        {% if conference.is_featured %}
-                            <span class="badge bg-warning">Рекомендуемая</span>
-                        {% endif %}
-                    </h5>
+                    <div class="d-flex justify-content-between">
+                        <h5 class="card-title">
+                            <a href="{% url 'conferences:conference_detail' conference.slug %}" class="text-decoration-none">
+                                {{ conference.title }}
+                            </a>
+                            {% if conference.is_featured %}
+                                <span class="badge bg-warning">Рекомендуемое</span>
+                            {% endif %}
+                        </h5>
+                        <div>
+                            {% if conference.event_type == 'conference' %}
+                                <span class="badge bg-primary">📝 Конференция</span>
+                            {% elif conference.event_type == 'forum' %}
+                                <span class="badge bg-info">🗣️ Форум</span>
+                            {% elif conference.event_type == 'seminar' %}
+                                <span class="badge bg-success">📚 Семинар</span>
+                            {% elif conference.event_type == 'round_table' %}
+                                <span class="badge bg-warning">🔄 Круглый стол</span>
+                            {% elif conference.event_type == 'symposium' %}
+                                <span class="badge bg-secondary">🎯 Симпозиум</span>
+                            {% elif conference.event_type == 'congress' %}
+                                <span class="badge bg-danger">🌍 Конгресс</span>
+                            {% elif conference.event_type == 'school' %}
+                                <span class="badge bg-info">🎓 Школа</span>
+                            {% elif conference.event_type == 'workshop' %}
+                                <span class="badge bg-secondary">🔧 Мастер-класс</span>
+                            {% endif %}
+                        </div>
+                    </div>
 
                     <h6 class="card-subtitle mb-2 text-muted">
                         <a href="{% url 'organizations:organization_detail' conference.organization.pk %}" class="text-muted text-decoration-none">
@@ -124,11 +177,22 @@
                             <span class="badge bg-success">{{ conference.days_until_deadline }} дн.</span>
                         {% endif %}<br>
                         <strong>Место:</strong> {{ conference.location|default:"Не указано" }}<br>
-                        <strong>Тип:</strong> {{ conference.get_conference_type_display }} |
-                        <strong>Формат:</strong> {{ conference.get_format_display }}
+                        <strong>Формат:</strong>
+                        {% if conference.format == 'offline' %}🏛️ Очный
+                        {% elif conference.format == 'online' %}💻 Онлайн
+                        {% elif conference.format == 'hybrid' %}🔄 Гибридный
+                        {% endif %}
+                        |
+                        <strong>Участие:</strong>
+                        {% if conference.participation_format == 'offline' %}
+                            🏛️ Только очно
+                        {% elif conference.participation_format == 'online' %}
+                            💻 Только дистанционно
+                        {% elif conference.participation_format == 'hybrid' %}
+                            ✅ Можно выбрать
+                        {% endif %}
                     </p>
 
-                    <!-- ИСПРАВЛЕННЫЙ БЛОК С ТЕМАТИКАМИ И СТАТИСТИКОЙ -->
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             {% for topic in conference.topics.all|slice:":3" %}
@@ -150,7 +214,7 @@
             </div>
         {% empty %}
             <div class="alert alert-warning">
-                Конференций не найдено. Попробуйте изменить параметры фильтрации.
+                Мероприятий не найдено. Попробуйте изменить параметры фильтрации.
             </div>
         {% endfor %}
 

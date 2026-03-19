@@ -1,27 +1,29 @@
 #!/usr/bin/env python
 """
-Скрипт для тестирования подачи заявок и проверки всех функций
-Запуск: python test_applications.py
+Скрипт для создания тестовых заявок на мероприятия.
+Запуск: python create_test_applications.py
 """
 
 import os
 import django
 import sys
-from datetime import date, timedelta
 import random
+from datetime import date, timedelta
 
+# Настраиваем Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'conf_promotion.settings')
 django.setup()
 
+# Импортируем модели
 from django.contrib.auth import get_user_model
-from conferences.models import Conference, ConferenceApplication, ConferenceReview, Topic
+from conferences.models import Conference, ConferenceApplication, FavoriteConference, FavoriteOrganization
 from organizations.models import Organization
-from django.db.models import Count, Q
+from notifications.models import Notification
 
 User = get_user_model()
 
 
-# Цвета для вывода
+# Цвета для вывода в консоль
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -50,320 +52,425 @@ def print_header(msg):
     print(f"{Colors.BOLD}{Colors.HEADER}{'=' * 60}{Colors.ENDC}")
 
 
-def test_conferences_count():
-    """Проверка количества конференций"""
-    print_header("ТЕСТ 1: Количество конференций")
-
-    total = Conference.objects.count()
-    published = Conference.objects.filter(status='published').count()
-    upcoming = Conference.objects.filter(start_date__gte=date.today()).count()
-
-    print_info(f"Всего конференций: {total}")
-    print_info(f"Опубликовано: {published}")
-    print_info(f"Предстоящих: {upcoming}")
-
-    assert total > 0, "❌ Нет конференций в базе!"
-    assert published > 0, "❌ Нет опубликованных конференций!"
-
-    print_success("Тест пройден: конференции есть в базе")
-    return total, published, upcoming
+def get_users():
+    """Получение всех обычных пользователей (не организаций)"""
+    users = User.objects.filter(organization__isnull=True, is_superuser=False)
+    if not users.exists():
+        print_warning("Нет обычных пользователей. Сначала запусти populate_db.py")
+        return None
+    return users
 
 
-def test_organizations_count():
-    """Проверка количества организаций"""
-    print_header("ТЕСТ 2: Количество организаций")
-
-    total = Organization.objects.count()
-    active = Organization.objects.filter(is_active=True).count()
-
-    print_info(f"Всего организаций: {total}")
-    print_info(f"Активных: {active}")
-
-    assert total > 0, "❌ Нет организаций в базе!"
-
-    print_success("Тест пройден: организации есть в базе")
-    return total
+def get_organizations():
+    """Получение всех активных организаций"""
+    orgs = Organization.objects.filter(is_active=True, is_verified=True)
+    if not orgs.exists():
+        print_warning("Нет активных организаций. Сначала запусти populate_db.py")
+        return None
+    return orgs
 
 
-def test_users_count():
-    """Проверка количества пользователей"""
-    print_header("ТЕСТ 3: Количество пользователей")
-
-    total = User.objects.count()
-    organizers = User.objects.filter(organization__isnull=False).count()
-    participants = User.objects.filter(organization__isnull=True, is_superuser=False).count()
-
-    print_info(f"Всего пользователей: {total}")
-    print_info(f"Организаторов: {organizers}")
-    print_info(f"Участников: {participants}")
-
-    assert total > 0, "❌ Нет пользователей в базе!"
-    assert participants > 0, "❌ Нет обычных участников!"
-
-    print_success("Тест пройден: пользователи есть в базе")
-    return total
-
-
-def test_create_applications():
-    """Тестирование создания заявок"""
-    print_header("ТЕСТ 4: Создание тестовых заявок")
-
-    # Получаем обычных пользователей (не организаторов)
-    participants = User.objects.filter(organization__isnull=True, is_superuser=False)
-
-    # Получаем предстоящие конференции
-    upcoming_conferences = Conference.objects.filter(
-        status='published',
+def get_upcoming_conferences():
+    """Получение предстоящих мероприятий"""
+    conferences = Conference.objects.filter(
+        status=Conference.Status.PUBLISHED,
         start_date__gte=date.today()
-    )[:5]
+    ).order_by('start_date')
 
-    if not participants or not upcoming_conferences:
-        print_warning("Недостаточно данных для тестирования заявок")
+    if not conferences.exists():
+        # Если нет предстоящих, берём любые опубликованные
+        conferences = Conference.objects.filter(status=Conference.Status.PUBLISHED)[:5]
+
+    return conferences
+
+
+def get_past_conferences():
+    """Получение прошедших мероприятий (для отзывов)"""
+    return Conference.objects.filter(
+        status=Conference.Status.PUBLISHED,
+        end_date__lt=date.today()
+    )[:10]
+
+
+def create_applications():
+    """Создание тестовых заявок"""
+    print_header("СОЗДАНИЕ ТЕСТОВЫХ ЗАЯВОК")
+
+    users = get_users()
+    if not users:
+        return
+
+    conferences = get_upcoming_conferences()
+    if not conferences:
+        print_warning("Нет мероприятий для подачи заявок")
         return
 
     applications_created = 0
 
-    for i, participant in enumerate(participants[:3]):  # Берем первых 3 участников
-        for conf in upcoming_conferences[:2]:  # Каждый подает на 2 конференции
-            # Проверяем, нет ли уже заявки
-            existing = ConferenceApplication.objects.filter(
-                user=participant,
-                conference=conf
-            ).exists()
+    # Данные для генерации
+    first_names = ['Иван', 'Пётр', 'Сергей', 'Алексей', 'Дмитрий', 'Андрей', 'Михаил', 'Александр']
+    last_names = ['Иванов', 'Петров', 'Сидоров', 'Смирнов', 'Кузнецов', 'Попов', 'Васильев', 'Михайлов']
+    middle_names = ['Иванович', 'Петрович', 'Сергеевич', 'Алексеевич', 'Дмитриевич', 'Андреевич']
 
-            if not existing:
-                application = ConferenceApplication.objects.create(
-                    user=participant,
-                    conference=conf,
-                    full_name=participant.get_full_name() or f"Участник {i}",
-                    email=participant.email,
-                    organization=participant.affiliation or "Тестовая организация",
-                    presentation_title=f"Тестовый доклад {i + 1}",
-                    presentation_type=random.choice(['plenary', 'section', 'poster']),
-                    abstract_text=f"Это тестовый текст тезисов доклада для проверки работы системы подачи заявок. Номер теста: {i + 1}",
-                    comment=f"Тестовая заявка от участника {participant.username}"
+    presentation_templates = [
+        "Исследование {topic} в современных условиях",
+        "Применение {topic} для решения задач {field}",
+        "Анализ {topic} и перспективы развития",
+        "Новые подходы к изучению {topic}",
+        "{topic} в эпоху цифровой трансформации",
+        "Моделирование процессов {topic}",
+        "Оптимизация {topic} с использованием ИИ",
+        "Экспериментальные исследования {topic}",
+    ]
+
+    fields = {
+        'Физика': 'физики',
+        'Математика': 'математики',
+        'Информатика': 'информатики',
+        'Биология': 'биологии',
+        'Химия': 'химии',
+        'Медицина': 'медицины',
+        'Технические науки': 'инженерии',
+        'Экономика': 'экономики',
+    }
+
+    # Для каждого пользователя создаём 1-3 заявки
+    for user in users[:15]:  # Ограничим 15 пользователями
+        num_applications = random.randint(1, 3)
+        selected_conferences = random.sample(list(conferences), min(num_applications, len(conferences)))
+
+        for conf in selected_conferences:
+            # Проверяем, нет ли уже заявки от этого пользователя на это мероприятие
+            if ConferenceApplication.objects.filter(user=user, conference=conf).exists():
+                continue
+
+            # Выбираем случайную тему из интересов пользователя или генерируем
+            topics = conf.topics.all()
+            if topics:
+                topic = random.choice(topics).name
+            else:
+                topic = random.choice(list(fields.keys()))
+
+            field = fields.get(topic, 'науки')
+            presentation_title = random.choice(presentation_templates).format(topic=topic, field=field)
+
+            # Выбираем формат участия в зависимости от доступных форматов мероприятия
+            if conf.participation_format == 'offline':
+                p_format = 'offline'
+            elif conf.participation_format == 'online':
+                p_format = 'online'
+            else:  # hybrid
+                p_format = random.choice(['offline', 'online'])
+
+            # Генерируем случайный статус (распределение: 50% новые, 30% на рассмотрении, 20% принятые/подтверждённые)
+            status_choices = [
+                ('new', 50),
+                ('under_review', 30),
+                ('accepted', 10),
+                ('confirmed', 5),
+                ('rejected', 5),
+            ]
+
+            status = random.choices(
+                [s[0] for s in status_choices],
+                weights=[s[1] for s in status_choices]
+            )[0]
+
+            # Создаём заявку
+            application = ConferenceApplication.objects.create(
+                user=user,
+                conference=conf,
+                full_name=f"{random.choice(last_names)} {random.choice(first_names)} {random.choice(middle_names)}",
+                email=user.email,
+                organization=user.affiliation or random.choice(['МГУ', 'СПбГУ', 'МФТИ', 'НИЯУ МИФИ', 'СО РАН']),
+                academic_degree=user.academic_degree or random.choice(['student', 'phd_student', 'phd', '']),
+                presentation_title=presentation_title,
+                presentation_type=random.choice(['plenary', 'section', 'poster', 'listener']),
+                participation_format=p_format,
+                abstract_text=f"Тезисы доклада по теме: {presentation_title}. Рассматриваются актуальные вопросы {field}, "
+                              f"предлагаются новые методы решения, анализируются полученные результаты. "
+                              f"Работа выполнена при поддержке гранта РФФИ.",
+                comment=f"Прошу включить доклад в программу конференции. Готов выступить в любой день.",
+                status=status,
+            )
+
+            # Обновляем счётчик заявок в мероприятии
+            conf.applications_count += 1
+            conf.save(update_fields=['applications_count'])
+
+            # Если статус "confirmed", добавляем ссылку на онлайн-встречу
+            if status == 'confirmed' and p_format == 'online':
+                application.meeting_link = conf.online_meeting_link or "https://telemost.yandex.ru/conf123456"
+                application.save()
+
+                # Создаём уведомление
+                Notification.objects.create(
+                    user=user,
+                    notification_type='application',
+                    title='Ваша заявка подтверждена',
+                    message=f'Ваша заявка на участие в мероприятии "{conf.title}" подтверждена. Ссылка для подключения: {application.meeting_link}',
+                    conference=conf
                 )
-                applications_created += 1
-                print_success(f"Создана заявка: {participant.username} → {conf.title[:30]}...")
+            elif status == 'accepted':
+                Notification.objects.create(
+                    user=user,
+                    notification_type='application',
+                    title='Заявка принята',
+                    message=f'Ваша заявка на участие в мероприятии "{conf.title}" принята. Ожидайте подтверждения.',
+                    conference=conf
+                )
 
-                # Обновляем счетчик заявок
-                conf.applications_count += 1
-                conf.save(update_fields=['applications_count'])
+            applications_created += 1
+            print_success(
+                f"Создана заявка: {application.full_name} → {conf.title[:40]}... ({application.get_status_display()}, {application.get_participation_format_display()})")
 
     print_info(f"Всего создано заявок: {applications_created}")
-    print_success("Тест пройден: заявки созданы")
+    return applications_created
 
 
-def test_create_reviews():
-    """Тестирование создания отзывов"""
-    print_header("ТЕСТ 5: Создание тестовых отзывов")
+def create_reviews():
+    """Создание тестовых отзывов на прошедшие мероприятия"""
+    print_header("СОЗДАНИЕ ТЕСТОВЫХ ОТЗЫВОВ")
 
-    # Получаем прошедшие конференции
-    past_conferences = Conference.objects.filter(
-        status='published',
-        end_date__lt=date.today()
-    )[:3]
+    past_conferences = get_past_conferences()
+    if not past_conferences:
+        print_warning("Нет прошедших мероприятий для отзывов")
+        return
 
-    # Получаем пользователей, которые подавали заявки
-    users_with_apps = User.objects.filter(
-        applications__conference__in=past_conferences
-    ).distinct()
+    # Берём пользователей, которые подавали заявки на прошедшие мероприятия
+    applications = ConferenceApplication.objects.filter(
+        conference__in=past_conferences,
+        status__in=['confirmed', 'accepted']
+    ).select_related('user', 'conference')
 
-    if not past_conferences or not users_with_apps:
-        print_warning("Недостаточно данных для тестирования отзывов")
+    if not applications.exists():
+        print_warning("Нет подтверждённых заявок на прошедшие мероприятия")
         return
 
     reviews_created = 0
 
-    for user in users_with_apps[:3]:
-        for conf in past_conferences:
-            # Проверяем, нет ли уже отзыва
-            existing = ConferenceReview.objects.filter(
-                user=user,
-                conference=conf
-            ).exists()
+    review_texts = [
+        "Отличная организация, интересные доклады, продуктивная дискуссия. Обязательно приму участие в следующем году.",
+        "Хороший уровень докладов, насыщенная программа. Организаторы молодцы!",
+        "Понравилась атмосфера, много полезных контактов. Секции были хорошо организованы.",
+        "Достойный уровень мероприятия. Есть небольшие замечания по таймингу, но в целом всё отлично.",
+        "Познавательно, интересно, полезно. Спасибо организаторам!",
+        "Хорошая возможность представить свои результаты и получить обратную связь.",
+    ]
 
-            if not existing:
-                # Проверяем, участвовал ли пользователь в этой конференции
-                has_application = ConferenceApplication.objects.filter(
-                    user=user,
-                    conference=conf
-                ).exists()
+    pros_list = [
+        "Хорошая организация, интересные доклады, удобное место проведения",
+        "Отличная программа, квалифицированные докладчики, дружелюбная атмосфера",
+        "Много времени на вопросы, хороший кофе-брейк, удобные аудитории",
+        "Сильный состав участников, актуальные темы, хорошая модерация",
+    ]
 
-                review = ConferenceReview.objects.create(
-                    user=user,
-                    conference=conf,
-                    rating=random.randint(4, 5),
-                    title=f"Отличная конференция!",
-                    text=f"Мне очень понравилась конференция. Хорошая организация, интересные доклады. Обязательно приму участие в следующей.",
-                    pros="Хорошая организация, интересная программа, отличные докладчики",
-                    cons="Хотелось бы больше времени на вопросы",
-                    is_verified=has_application
-                )
-                reviews_created += 1
-                print_success(f"Создан отзыв: {user.username} → {conf.title[:30]}... ({review.rating}★)")
+    cons_list = [
+        "Мало времени на секционные доклады, хотелось бы больше",
+        "Технические проблемы со звуком в первый день",
+        "Дорогой оргвзнос для студентов",
+        "Далеко от метро, сложно добираться",
+        "",
+    ]
+
+    for app in applications[:20]:  # Ограничим 20 отзывами
+        # Проверяем, нет ли уже отзыва
+        if hasattr(app.user, 'reviews') and app.user.reviews.filter(conference=app.conference).exists():
+            continue
+
+        from conferences.models import ConferenceReview
+
+        review = ConferenceReview.objects.create(
+            user=app.user,
+            conference=app.conference,
+            rating=random.randint(4, 5),  # В основном хорошие оценки
+            title=f"Отзыв о мероприятии {app.conference.short_title or app.conference.title[:30]}",
+            text=random.choice(review_texts),
+            pros=random.choice(pros_list),
+            cons=random.choice(cons_list),
+            is_verified=True,
+            is_published=True
+        )
+
+        reviews_created += 1
+        print_success(f"Создан отзыв: {app.user.get_full_name()} → {app.conference.title[:40]}... ({review.rating}★)")
 
     print_info(f"Всего создано отзывов: {reviews_created}")
-    print_success("Тест пройден: отзывы созданы")
 
 
-def test_favorites():
-    """Тестирование добавления в избранное"""
-    print_header("ТЕСТ 6: Тестирование избранного")
+def create_favorites():
+    """Добавление мероприятий и организаций в избранное"""
+    print_header("СОЗДАНИЕ ИЗБРАННОГО")
 
-    from conferences.models import FavoriteConference, FavoriteOrganization
+    users = get_users()
+    if not users:
+        return
 
-    participants = User.objects.filter(organization__isnull=True)[:3]
-    conferences = Conference.objects.filter(status='published')[:5]
-    organizations = Organization.objects.filter(is_active=True)[:3]
+    conferences = Conference.objects.filter(status=Conference.Status.PUBLISHED)[:15]
+    organizations = Organization.objects.filter(is_active=True, is_verified=True)[:10]
 
     favorites_created = 0
 
-    for user in participants:
-        for conf in conferences:
-            existing = FavoriteConference.objects.filter(
-                user=user,
-                conference=conf
-            ).exists()
+    for user in users[:10]:
+        # Добавляем в избранное 2-5 мероприятий
+        num_conf_fav = random.randint(2, 5)
+        fav_confs = random.sample(list(conferences), min(num_conf_fav, len(conferences)))
 
-            if not existing:
-                fav = FavoriteConference.objects.create(
-                    user=user,
-                    conference=conf
-                )
+        for conf in fav_confs:
+            if not FavoriteConference.objects.filter(user=user, conference=conf).exists():
+                FavoriteConference.objects.create(user=user, conference=conf)
                 conf.favorites_count += 1
                 conf.save(update_fields=['favorites_count'])
                 favorites_created += 1
-                print_success(f"Добавлено в избранное: {user.username} → {conf.title[:30]}...")
 
-        for org in organizations:
-            existing = FavoriteOrganization.objects.filter(
-                user=user,
-                organization=org
-            ).exists()
+        # Добавляем в избранное 1-3 организации
+        num_org_fav = random.randint(1, 3)
+        fav_orgs = random.sample(list(organizations), min(num_org_fav, len(organizations)))
 
-            if not existing:
-                FavoriteOrganization.objects.create(
-                    user=user,
-                    organization=org
-                )
+        for org in fav_orgs:
+            if not FavoriteOrganization.objects.filter(user=user, organization=org).exists():
+                FavoriteOrganization.objects.create(user=user, organization=org)
                 favorites_created += 1
-                print_success(f"Добавлено в избранное: {user.username} → {org.name[:30]}...")
 
     print_info(f"Всего добавлено в избранное: {favorites_created}")
-    print_success("Тест пройден: избранное работает")
 
 
-def test_filters():
-    """Тестирование фильтров конференций"""
-    print_header("ТЕСТ 7: Тестирование фильтров")
+def create_notifications():
+    """Создание тестовых уведомлений"""
+    print_header("СОЗДАНИЕ ТЕСТОВЫХ УВЕДОМЛЕНИЙ")
 
-    today = date.today()
-
-    # Фильтр по статусу
-    upcoming = Conference.objects.filter(
-        status='published',
-        start_date__gte=today
-    ).count()
-
-    ongoing = Conference.objects.filter(
-        status='published',
-        start_date__lte=today,
-        end_date__gte=today
-    ).count()
-
-    past = Conference.objects.filter(
-        status='published',
-        end_date__lt=today
-    ).count()
-
-    print_info(f"Предстоящих конференций: {upcoming}")
-    print_info(f"Идущих сейчас: {ongoing}")
-    print_info(f"Прошедших: {past}")
-
-    # Фильтр по тематикам
-    topics = Topic.objects.annotate(
-        conf_count=Count('conferences')
-    ).filter(conf_count__gt=0)[:5]
-
-    print_info("Топ тематик по количеству конференций:")
-    for topic in topics:
-        print_info(f"  {topic.name}: {topic.conf_count} конференций")
-
-    # Фильтр по организациям
-    orgs = Organization.objects.annotate(
-        conf_count=Count('conferences')
-    ).order_by('-conf_count')[:5]
-
-    print_info("Топ организаторов:")
-    for org in orgs:
-        print_info(f"  {org.name}: {org.conf_count} конференций")
-
-    # Фильтр по формату
-    offline = Conference.objects.filter(status='published', format='offline').count()
-    online = Conference.objects.filter(status='published', format='online').count()
-    hybrid = Conference.objects.filter(status='published', format='hybrid').count()
-
-    print_info(f"Офлайн конференций: {offline}")
-    print_info(f"Онлайн конференций: {online}")
-    print_info(f"Гибридных конференций: {hybrid}")
-
-    print_success("Тест пройден: фильтры работают")
-
-
-def test_organizer_access():
-    """Тестирование доступа организаторов к своим конференциям"""
-    print_header("ТЕСТ 8: Тестирование доступа организаторов")
-
-    # Получаем первую организацию
-    org = Organization.objects.filter(is_active=True).first()
-    if not org:
-        print_warning("Нет организаций для тестирования")
+    users = get_users()
+    if not users:
         return
 
-    user = org.user
-    conferences = Conference.objects.filter(organization=org)
+    conferences = Conference.objects.filter(status=Conference.Status.PUBLISHED)[:5]
+    organizations = Organization.objects.filter(is_active=True, is_verified=True)[:3]
 
-    print_info(f"Организация: {org.name}")
-    print_info(f"Пользователь: {user.username}")
-    print_info(f"Конференций организации: {conferences.count()}")
+    notifications_created = 0
 
-    assert conferences.count() > 0, "❌ У организации нет конференций!"
+    notification_templates = [
+        ('deadline', 'Приближается дедлайн подачи заявок',
+         'До дедлайна мероприятия "{title}" осталось 7 дней. Успейте подать заявку!'),
+        ('new_conf', 'Новое мероприятие по вашим интересам',
+         'Появилось новое мероприятие: "{title}". Подробности на сайте.'),
+        ('fav_org', 'Новости от избранной организации',
+         'Организация "{org}" опубликовала новое мероприятие: "{title}".'),
+        ('reminder', 'Напоминание о мероприятии', 'Напоминаем, что мероприятие "{title}" начнётся завтра.'),
+    ]
 
-    print_success("Тест пройден: организатор имеет доступ к своим конференциям")
+    for user in users[:10]:
+        # 3-5 уведомлений на пользователя
+        num_notifications = random.randint(3, 5)
+
+        for i in range(num_notifications):
+            notif_type, title_template, msg_template = random.choice(notification_templates)
+
+            if notif_type in ['deadline', 'reminder', 'new_conf']:
+                conf = random.choice(conferences)
+                title = title_template
+                message = msg_template.format(title=conf.title)
+                related_conf = conf
+                related_org = None
+            else:  # fav_org
+                org = random.choice(organizations)
+                conf = random.choice(conferences)
+                title = title_template
+                message = msg_template.format(org=org.name, title=conf.title)
+                related_conf = conf
+                related_org = org
+
+            Notification.objects.create(
+                user=user,
+                notification_type=notif_type,
+                title=title,
+                message=message,
+                conference=related_conf,
+                organization=related_org,
+                is_read=random.choice([True, False]),
+                is_emailed=False
+            )
+
+            notifications_created += 1
+
+    print_info(f"Всего создано уведомлений: {notifications_created}")
+
+
+def print_statistics():
+    """Вывод статистики"""
+    print_header("СТАТИСТИКА ПОСЛЕ ЗАПОЛНЕНИЯ")
+
+    total_applications = ConferenceApplication.objects.count()
+    total_reviews = ConferenceApplication.objects.model.conferencereview_set.count() if hasattr(
+        ConferenceApplication.objects.model, 'conferencereview_set') else 0
+    total_favorites_conf = FavoriteConference.objects.count()
+    total_favorites_org = FavoriteOrganization.objects.count()
+    total_notifications = Notification.objects.count()
+
+    print_success(f"Всего заявок: {total_applications}")
+    print_success(f"Всего отзывов: {total_reviews}")
+    print_success(f"Всего избранных мероприятий: {total_favorites_conf}")
+    print_success(f"Всего избранных организаций: {total_favorites_org}")
+    print_success(f"Всего уведомлений: {total_notifications}")
+
+    # Статистика по статусам заявок
+    print_info("\nСтатистика по статусам заявок:")
+    from django.db.models import Count
+    status_counts = ConferenceApplication.objects.values('status').annotate(count=Count('id'))
+    status_display = dict(ConferenceApplication.ApplicationStatus.choices)
+
+    for item in status_counts:
+        status = item['status']
+        count = item['count']
+        display = status_display.get(status, status)
+        print_info(f"  {display}: {count}")
+
+    # Статистика по форматам участия
+    print_info("\nСтатистика по форматам участия:")
+    format_counts = ConferenceApplication.objects.values('participation_format').annotate(count=Count('id'))
+    format_display = dict(ConferenceApplication.ParticipationFormat.choices)
+
+    for item in format_counts:
+        format_code = item['participation_format']
+        count = item['count']
+        display = format_display.get(format_code, format_code)
+        print_info(f"  {display}: {count}")
 
 
 def main():
-    """Главная функция тестирования"""
-    print_header("ТЕСТИРОВАНИЕ ПЛАТФОРМЫ")
-    print_info("Начинаем проверку всех систем...")
+    """Главная функция"""
+    print_header("СОЗДАНИЕ ТЕСТОВЫХ ЗАЯВОК И СВЯЗАННЫХ ДАННЫХ")
 
-    try:
-        # Базовые проверки
-        test_conferences_count()
-        test_organizations_count()
-        test_users_count()
+    # Проверяем наличие данных
+    if User.objects.count() < 5:
+        print_warning("Мало пользователей. Сначала запусти populate_db.py")
+        return
 
-        # Проверка функционала
-        test_create_applications()
-        test_create_reviews()
-        test_favorites()
-        test_filters()
-        test_organizer_access()
+    if Conference.objects.count() < 5:
+        print_warning("Мало мероприятий. Сначала запусти populate_db.py")
+        return
 
-        print_header("ИТОГИ ТЕСТИРОВАНИЯ")
-        print_success("✅ Все тесты пройдены успешно!")
-        print_info(f"Итоговая статистика:")
-        print_info(f"  Конференций: {Conference.objects.count()}")
-        print_info(f"  Организаций: {Organization.objects.count()}")
-        print_info(f"  Пользователей: {User.objects.count()}")
-        print_info(f"  Заявок: {ConferenceApplication.objects.count()}")
-        print_info(f"  Отзывов: {ConferenceReview.objects.count()}")
+    # Создаём заявки
+    applications = create_applications()
 
-    except AssertionError as e:
-        print_warning(f"❌ Тест не пройден: {e}")
-    except Exception as e:
-        print_warning(f"❌ Ошибка при тестировании: {e}")
+    # Создаём отзывы (если есть прошедшие мероприятия)
+    create_reviews()
+
+    # Создаём избранное
+    create_favorites()
+
+    # Создаём уведомления
+    create_notifications()
+
+    # Выводим статистику
+    print_statistics()
+
+    print_header("ГОТОВО!")
+    print_success("Тестовые заявки успешно созданы!")
+    print_info("\nТеперь вы можете:")
+    print_info("  1. Зайти в личный кабинет участника и посмотреть свои заявки")
+    print_info("  2. Зайти в личный кабинет организации и обработать заявки")
+    print_info("  3. Проверить уведомления")
+    print_info("  4. Посмотреть избранное")
 
 
 if __name__ == '__main__':

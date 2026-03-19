@@ -5,7 +5,7 @@ from .models import ConferenceApplication, ConferenceReview
 
 class ConferenceApplicationForm(forms.ModelForm):
     """
-    Форма для подачи заявки на участие в конференции
+    Форма для подачи заявки на участие в мероприятии
     """
 
     class Meta:
@@ -17,6 +17,7 @@ class ConferenceApplicationForm(forms.ModelForm):
             'academic_degree',
             'presentation_title',
             'presentation_type',
+            'participation_format',
             'abstract',
             'abstract_text',
             'comment',
@@ -45,6 +46,9 @@ class ConferenceApplicationForm(forms.ModelForm):
             'presentation_type': forms.Select(attrs={
                 'class': 'form-select'
             }),
+            'participation_format': forms.Select(attrs={
+                'class': 'form-select'
+            }),
             'abstract': forms.FileInput(attrs={
                 'class': 'form-control'
             }),
@@ -66,6 +70,7 @@ class ConferenceApplicationForm(forms.ModelForm):
             'academic_degree': 'Ученая степень/статус',
             'presentation_title': 'Тема доклада *',
             'presentation_type': 'Тип доклада *',
+            'participation_format': 'Формат участия *',
             'abstract': 'Файл с тезисами',
             'abstract_text': 'Текст тезисов',
             'comment': 'Комментарий',
@@ -73,7 +78,29 @@ class ConferenceApplicationForm(forms.ModelForm):
         help_texts = {
             'abstract': 'Принимаются файлы PDF, DOC, DOCX (максимум 5 МБ)',
             'abstract_text': 'Если у вас нет файла, вставьте текст тезисов сюда',
+            'participation_format': 'Выберите удобный для вас формат участия',
         }
+
+    def __init__(self, *args, **kwargs):
+        self.conference = kwargs.pop('conference', None)
+        super().__init__(*args, **kwargs)
+
+        # Добавляем CSS классы для всех полей
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                field.widget.attrs['class'] = 'form-control'
+
+        # Настраиваем поле participation_format в зависимости от доступных форматов мероприятия
+        if self.conference:
+            if self.conference.participation_format == 'offline':
+                self.fields['participation_format'].widget = forms.HiddenInput()
+                self.fields['participation_format'].initial = 'offline'
+            elif self.conference.participation_format == 'online':
+                self.fields['participation_format'].widget = forms.HiddenInput()
+                self.fields['participation_format'].initial = 'online'
+            # Если hybrid - оставляем выбор
 
     def clean(self):
         """
@@ -99,7 +126,6 @@ class ConferenceApplicationForm(forms.ModelForm):
             if abstract.size > 5 * 1024 * 1024:  # 5MB
                 raise forms.ValidationError('Размер файла не должен превышать 5 МБ')
 
-            # Проверка расширения файла
             allowed_extensions = ['.pdf', '.doc', '.docx']
             ext = abstract.name.lower()
             if not any(ext.endswith(allowed) for allowed in allowed_extensions):
@@ -110,7 +136,7 @@ class ConferenceApplicationForm(forms.ModelForm):
 
 class ConferenceReviewForm(forms.ModelForm):
     """
-    Форма для отзыва на конференцию
+    Форма для отзыва на мероприятие
     """
 
     class Meta:
@@ -127,7 +153,7 @@ class ConferenceReviewForm(forms.ModelForm):
             'text': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 5,
-                'placeholder': 'Ваш отзыв о конференции'
+                'placeholder': 'Ваш отзыв о мероприятии'
             }),
             'pros': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -148,9 +174,17 @@ class ConferenceReviewForm(forms.ModelForm):
             'cons': 'Минусы',
         }
         help_texts = {
-            'rating': 'Оцените конференцию от 1 до 5 звезд',
-            'text': 'Поделитесь своими впечатлениями о конференции',
+            'rating': 'Оцените мероприятие от 1 до 5 звезд',
+            'text': 'Поделитесь своими впечатлениями о мероприятии',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['rating'].widget.attrs['class'] = 'form-select'
+        self.fields['title'].widget.attrs['class'] = 'form-control'
+        self.fields['text'].widget.attrs['class'] = 'form-control'
+        self.fields['pros'].widget.attrs['class'] = 'form-control'
+        self.fields['cons'].widget.attrs['class'] = 'form-control'
 
     def clean_rating(self):
         """

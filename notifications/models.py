@@ -16,9 +16,11 @@ class Notification(models.Model):
     class NotificationType(models.TextChoices):
         DEADLINE = 'deadline', 'Приближение дедлайна'
         APPLICATION_STATUS = 'application', 'Изменение статуса заявки'
-        NEW_CONFERENCE = 'new_conf', 'Новая конференция по интересам'
+        NEW_CONFERENCE = 'new_conf', 'Новое мероприятие по интересам'
         FAVORITE_ORG = 'fav_org', 'Новости от избранной организации'
-        REMINDER = 'reminder', 'Напоминание о конференции'
+        REMINDER = 'reminder', 'Напоминание о мероприятии'
+        INVITATION = 'invitation', 'Приглашение к участию'
+        MEETING_LINK = 'meeting_link', 'Ссылка на онлайн-встречу'
         SYSTEM = 'system', 'Системное уведомление'
 
     user = models.ForeignKey(
@@ -35,7 +37,7 @@ class Notification(models.Model):
     title = models.CharField('Заголовок', max_length=200)
     message = models.TextField('Текст уведомления')
 
-    # Связанные объекты (опционально)
+    # Связанные объекты
     conference = models.ForeignKey(
         Conference,
         on_delete=models.SET_NULL,
@@ -90,17 +92,15 @@ class NotificationSettings(models.Model):
         verbose_name='Пользователь'
     )
 
-    # Типы уведомлений
     notify_deadline = models.BooleanField('Дедлайны', default=True)
     notify_application = models.BooleanField('Статус заявок', default=True)
-    notify_new_conference = models.BooleanField('Новые конференции', default=True)
+    notify_new_conference = models.BooleanField('Новые мероприятия', default=True)
     notify_favorite_org = models.BooleanField('Новости от организаций', default=True)
     notify_reminder = models.BooleanField('Напоминания', default=True)
+    notify_invitation = models.BooleanField('Приглашения', default=True)
 
-    # Периодичность
     send_weekly_digest = models.BooleanField('Еженедельный дайджест', default=False)
 
-    # Способ доставки
     send_email = models.BooleanField('Отправлять на email', default=True)
     send_site = models.BooleanField('Показывать на сайте', default=True)
 

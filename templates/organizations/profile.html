@@ -11,17 +11,23 @@
             <div class="card-body text-center">
                 {% if organization.logo %}
                     <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 100px;">
+                    <p class="text-muted small">Логотип организации</p>
                 {% else %}
                     <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 100px; height: 100px;">
                         <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
                     </div>
+                    <p class="text-muted small">Логотип отсутствует</p>
                 {% endif %}
-                <h5>{{ organization.name }}</h5>
 
-                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <!-- Кнопка для просмотра профиля организации -->
                 <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
                     <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
                 </a>
+
+                <!-- Информационное сообщение о логотипе -->
+                <div class="alert alert-info mt-2 small">
+                    <i class="bi bi-info-circle"></i> Для изменения логотипа обратитесь к администратору платформы.
+                </div>
             </div>
         </div>
 
@@ -50,41 +56,34 @@
                 <h4 class="mb-0">Профиль организации</h4>
             </div>
             <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post">
                     {% csrf_token %}
 
                     <div class="row">
-                        <div class="col-md-3 text-center mb-3">
-                            {% if organization.logo %}
-                                <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 150px;">
-                            {% else %}
-                                <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3" style="height: 150px;">
-                                    <span class="display-4">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
-                                </div>
-                            {% endif %}
-                            <label for="logo" class="form-label">Изменить логотип</label>
-                            <input type="file" name="logo" class="form-control form-control-sm" accept="image/*">
-                        </div>
-
-                        <div class="col-md-9">
-                            <div class="mb-3">
-                                <label class="form-label">Название организации</label>
-                                <input type="text" class="form-control" value="{{ organization.name }}" readonly>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">ИНН</label>
-                                <input type="text" class="form-control" value="{{ organization.inn }}" readonly>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Юридический адрес</label>
-                                <textarea class="form-control" rows="2" readonly>{{ organization.legal_address }}</textarea>
-                            </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">Полное название организации</label>
+                            <input type="text" class="form-control" value="{{ organization.name }}" readonly>
                         </div>
                     </div>
 
-                    <h5 class="mt-4">Контактная информация для конференций</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Краткое название</label>
+                            <input type="text" class="form-control" value="{{ organization.short_name }}" readonly>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">ИНН</label>
+                            <input type="text" class="form-control" value="{{ organization.inn }}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Юридический адрес</label>
+                        <textarea class="form-control" rows="2" readonly>{{ organization.legal_address }}</textarea>
+                    </div>
+
+                    <h5 class="mt-4">Контактная информация (можно редактировать)</h5>
                     <hr>
 
                     <div class="row">

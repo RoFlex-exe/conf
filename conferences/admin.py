@@ -3,14 +3,15 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.db.models import Count
+from django.utils import timezone
 from .models import Topic, Conference, ConferenceApplication, ConferenceReview
 
 
 class ConferenceApplicationInline(admin.TabularInline):
     model = ConferenceApplication
     extra = 0
-    fields = ['full_name', 'email', 'presentation_title', 'status']
-    readonly_fields = ['full_name', 'email', 'presentation_title']
+    fields = ['full_name', 'email', 'presentation_title', 'status', 'participation_format']
+    readonly_fields = ['full_name', 'email', 'presentation_title', 'participation_format']
     can_delete = False
     max_num = 0
 
@@ -39,17 +40,17 @@ class TopicAdmin(admin.ModelAdmin):
     def conferences_count(self, obj):
         return obj.conf_count
 
-    conferences_count.short_description = 'Конференций'
+    conferences_count.short_description = 'Мероприятий'
 
 
 @admin.register(Conference)
 class ConferenceAdmin(admin.ModelAdmin):
     list_display = [
-        'title', 'short_title', 'organization', 'conference_type',
+        'title', 'short_title', 'organization', 'event_type',  # Изменили conference_type на event_type
         'start_date', 'status', 'view_count', 'applications_count', 'is_featured'
     ]
     list_filter = [
-        'status', 'conference_type', 'format', 'is_featured', 'is_free',
+        'status', 'event_type', 'format', 'is_featured', 'is_free',  # Изменили conference_type на event_type
         'organization', 'topics', 'start_date'
     ]
     search_fields = ['title', 'short_title', 'description']
@@ -64,7 +65,7 @@ class ConferenceAdmin(admin.ModelAdmin):
         ('Основная информация', {
             'fields': (
                 'title', 'short_title', 'slug', 'organization', 'topics',
-                ('conference_type', 'format', 'access_level'),
+                ('event_type', 'format', 'participation_format'),  # Изменили
                 ('status', 'is_featured', 'is_free'),
             )
         }),
@@ -81,6 +82,7 @@ class ConferenceAdmin(admin.ModelAdmin):
         ('Описание и программа', {
             'fields': (
                 'description', 'program', 'requirements', 'participation_terms',
+                'requirements_link', 'requirements_file',  # Добавили новые поля
             )
         }),
         ('Контакты', {
@@ -90,7 +92,7 @@ class ConferenceAdmin(admin.ModelAdmin):
         }),
         ('Ссылки и медиа', {
             'fields': (
-                'website', 'call_for_papers', 'poster',
+                'website', 'call_for_papers', 'poster', 'online_meeting_link',  # Добавили online_meeting_link
             )
         }),
         ('Публикации', {
@@ -121,19 +123,19 @@ class ConferenceAdmin(admin.ModelAdmin):
 
     def approve_conferences(self, request, queryset):
         queryset.update(status=Conference.Status.PUBLISHED, published_at=timezone.now())
-        self.message_user(request, f"Одобрено {queryset.count()} конференций")
+        self.message_user(request, f"Одобрено {queryset.count()} мероприятий")
 
-    approve_conferences.short_description = "Одобрить выбранные конференции"
+    approve_conferences.short_description = "Одобрить выбранные мероприятия"
 
     def reject_conferences(self, request, queryset):
         queryset.update(status=Conference.Status.REJECTED)
-        self.message_user(request, f"Отклонено {queryset.count()} конференций")
+        self.message_user(request, f"Отклонено {queryset.count()} мероприятий")
 
-    reject_conferences.short_description = "Отклонить выбранные конференции"
+    reject_conferences.short_description = "Отклонить выбранные мероприятия"
 
     def make_featured(self, request, queryset):
         queryset.update(is_featured=True)
-        self.message_user(request, f"Помечено как рекомендуемое: {queryset.count()} конференций")
+        self.message_user(request, f"Помечено как рекомендуемое: {queryset.count()} мероприятий")
 
     make_featured.short_description = "Сделать рекомендуемыми"
 
@@ -147,9 +149,9 @@ class ConferenceAdmin(admin.ModelAdmin):
 class ConferenceApplicationAdmin(admin.ModelAdmin):
     list_display = [
         'full_name', 'email', 'conference', 'presentation_title',
-        'status', 'created_at', 'user_link'
+        'participation_format', 'status', 'created_at', 'user_link'  # Добавили participation_format
     ]
-    list_filter = ['status', 'presentation_type', 'conference__organization']
+    list_filter = ['status', 'presentation_type', 'participation_format', 'conference__organization']  # Добавили фильтр
     search_fields = ['full_name', 'email', 'presentation_title']
     readonly_fields = ['created_at', 'updated_at', 'user_link']
 
@@ -160,15 +162,16 @@ class ConferenceApplicationAdmin(admin.ModelAdmin):
                 ('user', 'user_link'),
             )
         }),
-        ('Информация о докладе', {
+        ('Информация о докладе и формате участия', {  # Изменили название
             'fields': (
                 'presentation_title', 'presentation_type',
+                'participation_format',  # Добавили поле
                 'abstract', 'abstract_text',
             )
         }),
         ('Статус', {
             'fields': (
-                'status', 'organizer_comment',
+                'status', 'organizer_comment', 'meeting_link',  # Добавили meeting_link
                 ('created_at', 'updated_at'),
             )
         }),

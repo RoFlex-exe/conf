@@ -3,14 +3,15 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils import timezone
 from datetime import date
-import uuid  # Добавляем импорт для генерации уникальных идентификаторов
+import uuid
 
 from organizations.models import Organization
+from django.conf import settings
 
 
 class Topic(models.Model):
     """
-    Тематика конференции (научное направление)
+    Тематика мероприятия (научное направление)
     """
     name = models.CharField(
         'Название тематики',
@@ -69,27 +70,28 @@ class Topic(models.Model):
 
 class Conference(models.Model):
     """
-    Модель научной конференции
+    Модель научного мероприятия (конференция, форум, семинар, круглый стол)
     """
 
-    # Статусы конференции
+    # Статусы мероприятия
     class Status(models.TextChoices):
         DRAFT = 'draft', 'Черновик'
         PENDING = 'pending', 'На модерации'
-        PUBLISHED = 'published', 'Опубликована'
-        REJECTED = 'rejected', 'Отклонена'
+        PUBLISHED = 'published', 'Опубликовано'
+        REJECTED = 'rejected', 'Отклонено'
         ARCHIVED = 'archived', 'В архиве'
-        CANCELLED = 'cancelled', 'Отменена'
+        CANCELLED = 'cancelled', 'Отменено'
 
-    # Типы конференций
-    class ConferenceType(models.TextChoices):
-        INTERNATIONAL = 'international', 'Международная'
-        NATIONAL = 'national', 'Всероссийская'
-        REGIONAL = 'regional', 'Региональная'
-        UNIVERSITY = 'university', 'Вузовская'
-        SCHOOL = 'school', 'Школа-конференция'
+    # Типы мероприятий (расширенный список)
+    class EventType(models.TextChoices):
+        CONFERENCE = 'conference', 'Конференция'
+        FORUM = 'forum', 'Форум'
+        SEMINAR = 'seminar', 'Семинар'
+        ROUND_TABLE = 'round_table', 'Круглый стол'
         SYMPOSIUM = 'symposium', 'Симпозиум'
         CONGRESS = 'congress', 'Конгресс'
+        SCHOOL = 'school', 'Школа-конференция'
+        WORKSHOP = 'workshop', 'Мастер-класс'
 
     # Форматы проведения
     class Format(models.TextChoices):
@@ -97,15 +99,15 @@ class Conference(models.Model):
         ONLINE = 'online', 'Онлайн'
         HYBRID = 'hybrid', 'Гибридная (очно + онлайн)'
 
-    # Уровни доступа
-    class AccessLevel(models.TextChoices):
-        PUBLIC = 'public', 'Открытая для всех'
-        REGISTERED = 'registered', 'Только для зарегистрированных'
-        INVITE = 'invite', 'По приглашениям'
+    # Форматы участия для заявок
+    class ParticipationFormat(models.TextChoices):
+        OFFLINE = 'offline', 'Очно'
+        ONLINE = 'online', 'Дистанционно'
+        HYBRID = 'hybrid', 'Гибридно (можно выбрать при подаче)'
 
     # Основная информация
     title = models.CharField(
-        'Название конференции',
+        'Название мероприятия',
         max_length=300,
         help_text='Полное официальное название'
     )
@@ -113,7 +115,7 @@ class Conference(models.Model):
         'Краткое название',
         max_length=100,
         blank=True,
-        help_text='Аббревиатура или краткая форма (например: "ICM-2024")'
+        help_text='Аббревиатура или краткая форма (например: "ICM-2026")'
     )
     slug = models.SlugField(
         'URL-идентификатор',
@@ -128,21 +130,21 @@ class Conference(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Организатор',
         related_name='conferences',
-        help_text='Организация, проводящая конференцию'
+        help_text='Организация, проводящая мероприятие'
     )
     topics = models.ManyToManyField(
         Topic,
         verbose_name='Научные направления',
         related_name='conferences',
-        help_text='Выберите тематики конференции (можно несколько)'
+        help_text='Выберите тематики мероприятия (можно несколько)'
     )
 
     # Тип и формат
-    conference_type = models.CharField(
-        'Тип конференции',
+    event_type = models.CharField(
+        'Тип мероприятия',
         max_length=20,
-        choices=ConferenceType.choices,
-        default=ConferenceType.INTERNATIONAL
+        choices=EventType.choices,
+        default=EventType.CONFERENCE
     )
     format = models.CharField(
         'Формат проведения',
@@ -150,21 +152,22 @@ class Conference(models.Model):
         choices=Format.choices,
         default=Format.OFFLINE
     )
-    access_level = models.CharField(
-        'Уровень доступа',
+    participation_format = models.CharField(
+        'Доступные форматы участия',
         max_length=20,
-        choices=AccessLevel.choices,
-        default=AccessLevel.PUBLIC
+        choices=ParticipationFormat.choices,
+        default=ParticipationFormat.HYBRID,
+        help_text='Выберите, какие форматы участия доступны'
     )
 
     # Даты
     start_date = models.DateField(
         'Дата начала',
-        help_text='Дата начала конференции'
+        help_text='Дата начала мероприятия'
     )
     end_date = models.DateField(
         'Дата окончания',
-        help_text='Дата окончания конференции'
+        help_text='Дата окончания мероприятия'
     )
     deadline = models.DateField(
         'Дедлайн подачи заявок',
@@ -193,16 +196,21 @@ class Conference(models.Model):
         'Платформа для онлайн-участия',
         max_length=200,
         blank=True,
-        help_text='Например: Zoom, Webinar, Свой сервис'
+        help_text='Например: Zoom, Webinar, Яндекс Телемост'
+    )
+    online_meeting_link = models.URLField(
+        'Ссылка на онлайн-встречу',
+        blank=True,
+        help_text='Ссылка на Яндекс Телемост или другую платформу (будет отправлена участникам)'
     )
 
     # Детальное описание
     description = models.TextField(
-        'Описание конференции',
+        'Описание мероприятия',
         help_text='Подробное описание, цели, задачи'
     )
     program = models.TextField(
-        'Программа конференции',
+        'Программа мероприятия',
         blank=True,
         help_text='Программа мероприятия, пленарные докладчики'
     )
@@ -210,6 +218,18 @@ class Conference(models.Model):
         'Требования к оформлению',
         blank=True,
         help_text='Требования к тезисам, статьям, презентациям'
+    )
+    requirements_link = models.URLField(
+        'Ссылка на требования',
+        blank=True,
+        help_text='Ссылка на страницу с требованиями на вашем сайте'
+    )
+    requirements_file = models.FileField(
+        'Файл с требованиями',
+        upload_to='conferences/requirements/',
+        blank=True,
+        null=True,
+        help_text='Загрузите файл с требованиями (PDF, DOC, DOCX)'
     )
     participation_terms = models.TextField(
         'Условия участия',
@@ -236,7 +256,7 @@ class Conference(models.Model):
 
     # Ссылки
     website = models.URLField(
-        'Сайт конференции',
+        'Сайт мероприятия',
         blank=True,
         help_text='Официальный сайт, если есть отдельный'
     )
@@ -248,7 +268,7 @@ class Conference(models.Model):
 
     # Визуальные материалы
     poster = models.ImageField(
-        'Постер конференции',
+        'Постер мероприятия',
         upload_to='conferences/posters/',
         blank=True,
         null=True,
@@ -257,12 +277,12 @@ class Conference(models.Model):
 
     # Дополнительные опции
     is_featured = models.BooleanField(
-        'Рекомендуемая',
+        'Рекомендуемое',
         default=False,
         help_text='Показывать на главной в блоке "Рекомендуемые"'
     )
     is_free = models.BooleanField(
-        'Бесплатная',
+        'Бесплатное',
         default=True,
         help_text='Участие бесплатное?'
     )
@@ -278,7 +298,7 @@ class Conference(models.Model):
         help_text='Например: РИНЦ, Scopus, WoS'
     )
 
-    # Статистика и мета-информация
+    # Статусы и мета-информация
     status = models.CharField(
         'Статус',
         max_length=20,
@@ -311,14 +331,14 @@ class Conference(models.Model):
     )
 
     class Meta:
-        verbose_name = 'Конференция'
-        verbose_name_plural = 'Конференции'
+        verbose_name = 'Мероприятие'
+        verbose_name_plural = 'Мероприятия'
         ordering = ['-start_date', 'title']
         indexes = [
             models.Index(fields=['status', 'start_date']),
             models.Index(fields=['-start_date']),
             models.Index(fields=['deadline']),
-            models.Index(fields=['conference_type']),
+            models.Index(fields=['event_type']),
             models.Index(fields=['format']),
         ]
 
@@ -326,28 +346,19 @@ class Conference(models.Model):
         return self.title
 
     def save(self, *args, **kwargs):
-        """
-        Сохранение конференции с автоматической генерацией уникального slug
-        """
         if not self.slug:
-            # Создаем базовый slug из названия и года
             base_slug = slugify(self.title)
-            # Ограничиваем длину базового slug
             if len(base_slug) > 50:
                 base_slug = base_slug[:50]
             year_slug = f"{base_slug}-{self.start_date.year}"
             self.slug = year_slug
 
-            # Проверяем уникальность и добавляем суффикс при необходимости
             original_slug = self.slug
             counter = 1
             while Conference.objects.filter(slug=self.slug).exists():
-                # Если конфликт, добавляем числовой суффикс
                 self.slug = f"{original_slug}-{counter}"
                 counter += 1
-                # Предотвращаем бесконечный цикл (максимум 100 попыток)
                 if counter > 100:
-                    # Добавляем случайный UUID если всё совсем плохо
                     self.slug = f"{original_slug}-{uuid.uuid4().hex[:8]}"
                     break
 
@@ -361,16 +372,16 @@ class Conference(models.Model):
         return reverse('conferences:conference_detail', args=[self.slug])
 
     def is_upcoming(self):
-        """Проверка, предстоит ли конференция"""
+        """Проверка, предстоит ли мероприятие"""
         return self.start_date >= date.today()
 
     def is_ongoing(self):
-        """Идет ли конференция сейчас"""
+        """Идет ли мероприятие сейчас"""
         today = date.today()
         return self.start_date <= today <= self.end_date
 
     def is_past(self):
-        """Прошла ли конференция"""
+        """Прошло ли мероприятие"""
         return self.end_date < date.today()
 
     def days_until_deadline(self):
@@ -382,66 +393,19 @@ class Conference(models.Model):
         """Прошел ли дедлайн"""
         return self.deadline < date.today()
 
+    def get_event_type_display_ru(self):
+        """Русское отображение типа мероприятия"""
+        return dict(self.EventType.choices).get(self.event_type, '')
+
 
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
 
-class FavoriteConference(models.Model):
-    """
-    Избранные конференции пользователя
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='favorite_conferences'
-    )
-    conference = models.ForeignKey(
-        Conference,
-        on_delete=models.CASCADE,
-        related_name='favorited_by'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'conference')
-        verbose_name = 'Избранная конференция'
-        verbose_name_plural = 'Избранные конференции'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f"{self.user.email} - {self.conference.title}"
-
-
-class FavoriteOrganization(models.Model):
-    """
-    Избранные организации пользователя
-    """
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='favorite_organizations'
-    )
-    organization = models.ForeignKey(
-        Organization,
-        on_delete=models.CASCADE,
-        related_name='favorited_by'
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('user', 'organization')
-        verbose_name = 'Избранная организация'
-        verbose_name_plural = 'Избранные организации'
-
-    def __str__(self):
-        return f"{self.user.email} - {self.organization.name}"
-
-
 class ConferenceApplication(models.Model):
     """
-    Заявка на участие в конференции
+    Заявка на участие в мероприятии
     """
 
     class ApplicationStatus(models.TextChoices):
@@ -454,6 +418,10 @@ class ConferenceApplication(models.Model):
         CONFIRMED = 'confirmed', 'Подтверждена'
         CANCELLED = 'cancelled', 'Отменена'
 
+    class ParticipationFormat(models.TextChoices):
+        OFFLINE = 'offline', 'Очно'
+        ONLINE = 'online', 'Дистанционно'
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -465,12 +433,21 @@ class ConferenceApplication(models.Model):
         related_name='applications'
     )
 
-    # Информация об участнике (на случай, если профиль изменится)
+    # Информация об участнике
     full_name = models.CharField('ФИО', max_length=255)
     email = models.EmailField()
     organization = models.CharField('Место работы/учебы', max_length=255)
     position = models.CharField('Должность', max_length=200, blank=True)
     academic_degree = models.CharField('Ученая степень', max_length=100, blank=True)
+
+    # Выбор формата участия
+    participation_format = models.CharField(
+        'Формат участия',
+        max_length=20,
+        choices=ParticipationFormat.choices,
+        default=ParticipationFormat.OFFLINE,
+        help_text='Выберите предпочтительный формат участия'
+    )
 
     # Информация о докладе
     presentation_title = models.CharField('Тема доклада', max_length=500)
@@ -518,6 +495,13 @@ class ConferenceApplication(models.Model):
         help_text='Внутренний комментарий оргкомитета'
     )
 
+    # Ссылка на онлайн-встречу (заполняется при подтверждении)
+    meeting_link = models.URLField(
+        'Ссылка на онлайн-встречу',
+        blank=True,
+        help_text='Ссылка для дистанционных участников'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -525,6 +509,7 @@ class ConferenceApplication(models.Model):
         verbose_name = 'Заявка на участие'
         verbose_name_plural = 'Заявки на участие'
         ordering = ['-created_at']
+        unique_together = ['user', 'conference']
         indexes = [
             models.Index(fields=['status']),
             models.Index(fields=['conference', 'status']),
@@ -536,7 +521,7 @@ class ConferenceApplication(models.Model):
 
 class ConferenceReview(models.Model):
     """
-    Отзыв на конференцию
+    Отзыв на мероприятие
     """
     user = models.ForeignKey(
         User,
@@ -563,7 +548,7 @@ class ConferenceReview(models.Model):
     is_verified = models.BooleanField(
         'Подтвержденный участник',
         default=False,
-        help_text='Пользователь действительно участвовал в конференции'
+        help_text='Пользователь действительно участвовал в мероприятии'
     )
     is_published = models.BooleanField('Опубликован', default=True)
 
@@ -577,12 +562,63 @@ class ConferenceReview(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.user.email} - {self.conference.title} ({self.rating}★)"
+        return f"{self.user.get_full_name()} - {self.conference.title} ({self.rating}★)"
+
+
+class FavoriteConference(models.Model):
+    """
+    Избранные мероприятия пользователя
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorite_conferences'
+    )
+    conference = models.ForeignKey(
+        Conference,
+        on_delete=models.CASCADE,
+        related_name='favorited_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'conference')
+        verbose_name = 'Избранное мероприятие'
+        verbose_name_plural = 'Избранные мероприятия'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email} - {self.conference.title}"
+
+
+class FavoriteOrganization(models.Model):
+    """
+    Избранные организации пользователя
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='favorite_organizations'
+    )
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name='favorited_by'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'organization')
+        verbose_name = 'Избранная организация'
+        verbose_name_plural = 'Избранные организации'
+
+    def __str__(self):
+        return f"{self.user.email} - {self.organization.name}"
 
 
 class ConferenceFile(models.Model):
     """
-    Дополнительные файлы конференции (программа, информационное письмо и т.д.)
+    Дополнительные файлы мероприятия (программа, информационное письмо и т.д.)
     """
     conference = models.ForeignKey(
         Conference,
@@ -609,8 +645,8 @@ class ConferenceFile(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Файл конференции'
-        verbose_name_plural = 'Файлы конференции'
+        verbose_name = 'Файл мероприятия'
+        verbose_name_plural = 'Файлы мероприятия'
 
     def __str__(self):
         return self.title

@@ -10,17 +10,28 @@
         <!-- Хлебные крошки -->
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_list' %}">Конференции</a></li>
-                <li class="breadcrumb-item active" aria-current="page">{{ conference.title|truncatechars:50 }}</li>
+                <li class="breadcrumb-item"><a href="{% url 'conferences:conference_list' %}">Мероприятия</a></li>
+                <li class="breadcrumb-item active">{{ conference.title|truncatechars:50 }}</li>
             </ol>
         </nav>
 
-        <!-- Основная карточка конференции -->
+        <!-- Основная карточка мероприятия -->
         <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">{{ conference.title }}</h4>
+                <h4 class="mb-0">
+                    {% if conference.event_type == 'conference' %}📝 Конференция
+                    {% elif conference.event_type == 'forum' %}🗣️ Форум
+                    {% elif conference.event_type == 'seminar' %}📚 Семинар
+                    {% elif conference.event_type == 'round_table' %}🔄 Круглый стол
+                    {% elif conference.event_type == 'symposium' %}🎯 Симпозиум
+                    {% elif conference.event_type == 'congress' %}🌍 Конгресс
+                    {% elif conference.event_type == 'school' %}🎓 Школа-конференция
+                    {% elif conference.event_type == 'workshop' %}🔧 Мастер-класс
+                    {% else %}📅 Мероприятие
+                    {% endif %}
+                </h4>
                 {% if conference.is_featured %}
-                    <span class="badge bg-warning">Рекомендуемая</span>
+                    <span class="badge bg-warning">Рекомендуемое</span>
                 {% endif %}
             </div>
 
@@ -29,14 +40,15 @@
             {% endif %}
 
             <div class="card-body">
+                <h3>{{ conference.title }}</h3>
                 {% if conference.short_title %}
                     <h6 class="text-muted mb-3">{{ conference.short_title }}</h6>
                 {% endif %}
 
-                <!-- Статус конференции -->
+                <!-- Статус мероприятия -->
                 <div class="mb-3">
                     {% if conference.status == 'published' %}
-                        <span class="badge bg-success">Опубликована</span>
+                        <span class="badge bg-success">Опубликовано</span>
                     {% elif conference.status == 'pending' %}
                         <span class="badge bg-warning">На модерации</span>
                     {% elif conference.status == 'draft' %}
@@ -50,7 +62,7 @@
                     {% elif conference.is_ongoing %}
                         <span class="badge bg-warning">Идёт сейчас</span>
                     {% elif conference.is_past %}
-                        <span class="badge bg-secondary">Прошла</span>
+                        <span class="badge bg-secondary">Прошло</span>
                     {% endif %}
                 </div>
 
@@ -66,8 +78,19 @@
 
                         <h5>Тип и формат</h5>
                         <p>
-                            <span class="badge bg-info">{{ conference.get_conference_type_display }}</span>
+                            <span class="badge bg-info">{{ conference.get_event_type_display }}</span>
                             <span class="badge bg-info">{{ conference.get_format_display }}</span>
+                        </p>
+
+                        <h5>Формат участия</h5>
+                        <p>
+                            {% if conference.participation_format == 'offline' %}
+                                <span class="badge bg-secondary">Только очно</span>
+                            {% elif conference.participation_format == 'online' %}
+                                <span class="badge bg-secondary">Только дистанционно</span>
+                            {% elif conference.participation_format == 'hybrid' %}
+                                <span class="badge bg-success">Можно выбрать очно или дистанционно</span>
+                            {% endif %}
                         </p>
 
                         <h5>Научные направления</h5>
@@ -122,12 +145,34 @@
                     </div>
                 {% endif %}
 
-                {% if conference.requirements %}
-                    <h5>Требования к оформлению</h5>
-                    <div class="mb-4">
-                        {{ conference.requirements|linebreaks }}
+                <!-- Требования к участию -->
+                <h5>Требования к участию</h5>
+                <div class="mb-4">
+                    {% if conference.requirements %}
+                        <div class="mb-3">
+                            {{ conference.requirements|linebreaks }}
+                        </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-3 flex-wrap">
+                        {% if conference.requirements_link %}
+                            <a href="{{ conference.requirements_link }}" target="_blank" class="btn btn-outline-primary">
+                                <i class="bi bi-link-45deg"></i> Требования на сайте организатора
+                            </a>
+                        {% endif %}
+
+                        {% if conference.requirements_file %}
+                            <a href="{{ conference.requirements_file.url }}" download class="btn btn-outline-success">
+                                <i class="bi bi-file-earmark-text"></i> Скачать файл с требованиями
+                                <small class="text-muted">({{ conference.requirements_file.size|filesizeformat }})</small>
+                            </a>
+                        {% endif %}
                     </div>
-                {% endif %}
+
+                    {% if not conference.requirements_link and not conference.requirements_file and not conference.requirements %}
+                        <p class="text-muted">Требования не указаны. Свяжитесь с организатором для получения информации.</p>
+                    {% endif %}
+                </div>
 
                 {% if conference.participation_terms %}
                     <h5>Условия участия</h5>
@@ -143,7 +188,7 @@
 
                 <!-- Дополнительные файлы -->
                 {% if conference.files.all %}
-                    <h5>Материалы конференции</h5>
+                    <h5>Материалы мероприятия</h5>
                     <ul class="list-group mb-4">
                         {% for file in conference.files.all %}
                             <li class="list-group-item">
@@ -327,11 +372,11 @@
             </div>
         </div>
 
-        <!-- Похожие конференции -->
+        <!-- Похожие мероприятия -->
         {% if similar_conferences %}
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Похожие конференции</h5>
+                    <h5 class="mb-0">Похожие мероприятия</h5>
                 </div>
                 <div class="card-body">
                     {% for similar in similar_conferences %}

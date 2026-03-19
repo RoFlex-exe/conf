@@ -2,61 +2,658 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Редактирование конференции - {{ conference.title }}{% endblock %}
+{% block title %}Редактирование мероприятия - {{ conference.title }}{% endblock %}
 
 {% block content %}
 <div class="row">
+    <!-- Левое меню организации -->
     <div class="col-md-3">
-        <div class="list-group">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                {% if organization.logo %}
+                    <img src="{{ organization.logo.url }}" alt="{{ organization.name }}" class="img-fluid rounded mb-3" style="max-height: 80px;">
+                {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded mb-3 mx-auto" style="width: 80px; height: 80px;">
+                        <span class="display-6">{{ organization.short_name|default:organization.name|slice:":1" }}</span>
+                    </div>
+                {% endif %}
+                <h5 class="mb-1">{{ organization.name|truncatechars:40 }}</h5>
+                <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mt-2" target="_blank">
+                    <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
+                </a>
+            </div>
+        </div>
+
+        <div class="list-group mb-4">
             <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-speedometer2"></i> Обзор
+                <i class="bi bi-speedometer2 me-2"></i> Обзор
             </a>
             <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action active">
-                <i class="bi bi-calendar-event"></i> Мои конференции
+                <i class="bi bi-calendar-event me-2"></i> Мои мероприятия
+                <span class="badge bg-primary rounded-pill float-end">{{ total_conferences }}</span>
             </a>
             <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-people"></i> Заявки
+                <i class="bi bi-people me-2"></i> Заявки
             </a>
             <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-graph-up"></i> Статистика
+                <i class="bi bi-graph-up me-2"></i> Статистика
             </a>
             <a href="{% url 'organizations:organization_profile' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-building"></i> Профиль организации
+                <i class="bi bi-building me-2"></i> Профиль организации
             </a>
+        </div>
+
+        <div class="d-grid gap-2 mb-4">
+            <a href="{% url 'organizations:create_conference' %}" class="btn btn-success">
+                <i class="bi bi-plus-circle"></i> Создать мероприятие
+            </a>
+        </div>
+
+        <!-- Быстрые действия -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-lightning-charge"></i> Быстрые действия
+            </div>
+            <div class="card-body p-3">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'organizations:create_conference' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-plus-circle"></i> Создать мероприятие
+                    </a>
+                    <a href="{% url 'organizations:org_applications' %}?status=new" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-inbox"></i> Новые заявки
+                    </a>
+                    <a href="{% url 'organizations:org_conferences' %}?status=pending" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-hourglass-split"></i> На модерации
+                    </a>
+                    <a href="{% url 'organizations:organization_profile' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-pencil"></i> Редактировать профиль
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Правая часть - форма редактирования мероприятия -->
     <div class="col-md-9">
         <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Редактирование конференции</h4>
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-pencil-square"></i> Редактирование мероприятия</h4>
+                <span class="badge bg-light text-dark">ID: {{ conference.id }}</span>
             </div>
             <div class="card-body">
-                <form method="post" enctype="multipart/form-data">
+                <form method="post" enctype="multipart/form-data" id="conferenceForm">
                     {% csrf_token %}
 
-                    <!-- Та же структура, что и в create_conference.html -->
-                    <!-- ... (полностью аналогично форме создания) ... -->
+                    <!-- Прогресс заполнения -->
+                    <div class="progress mb-4" style="height: 5px;">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="formProgress"></div>
+                    </div>
 
-                    <!-- Только добавим предпросмотр текущего постера -->
-                    {% if conference.poster %}
-                        <div class="mb-3">
-                            <label class="form-label">Текущий постер</label><br>
-                            <img src="{{ conference.poster.url }}" alt="Постер" style="max-height: 150px;">
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in form.non_field_errors %}
+                                {{ error }}
+                            {% endfor %}
                         </div>
                     {% endif %}
 
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                        <a href="{% url 'organizations:org_conferences' %}" class="btn btn-secondary">
-                            <i class="bi bi-x"></i> Отмена
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check"></i> Сохранить изменения
-                        </button>
+                    <!-- 1. Основная информация -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">1</span> Основная информация</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="{{ form.title.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.title.label }}
+                                    </label>
+                                    {{ form.title }}
+                                    {% if form.title.errors %}
+                                        <div class="text-danger">{{ form.title.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Полное официальное название мероприятия</div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.short_title.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.short_title.label }}
+                                    </label>
+                                    {{ form.short_title }}
+                                    {% if form.short_title.errors %}
+                                        <div class="text-danger">{{ form.short_title.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Аббревиатура (например, ICMS-2026)</div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.event_type.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.event_type.label }}
+                                    </label>
+                                    {{ form.event_type }}
+                                    {% if form.event_type.errors %}
+                                        <div class="text-danger">{{ form.event_type.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.format.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.format.label }}
+                                    </label>
+                                    {{ form.format }}
+                                    {% if form.format.errors %}
+                                        <div class="text-danger">{{ form.format.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.status.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.status.label }}
+                                    </label>
+                                    {{ form.status }}
+                                    {% if form.status.errors %}
+                                        <div class="text-danger">{{ form.status.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Статус публикации мероприятия</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Даты проведения -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">2</span> Даты проведения</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.start_date.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.start_date.label }}
+                                    </label>
+                                    {{ form.start_date }}
+                                    {% if form.start_date.errors %}
+                                        <div class="text-danger">{{ form.start_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.end_date.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.end_date.label }}
+                                    </label>
+                                    {{ form.end_date }}
+                                    {% if form.end_date.errors %}
+                                        <div class="text-danger">{{ form.end_date.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="{{ form.deadline.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.deadline.label }}
+                                    </label>
+                                    {{ form.deadline }}
+                                    {% if form.deadline.errors %}
+                                        <div class="text-danger">{{ form.deadline.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="alert alert-info small" id="dateWarning" style="display: none;">
+                                <i class="bi bi-exclamation-triangle"></i> Внимание: дедлайн должен быть раньше даты начала мероприятия
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Место проведения -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">3</span> Место проведения</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.location.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.location.label }}
+                                    </label>
+                                    {{ form.location }}
+                                    {% if form.location.errors %}
+                                        <div class="text-danger">{{ form.location.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">Город, страна</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.venue.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.venue.label }}
+                                    </label>
+                                    {{ form.venue }}
+                                    {% if form.venue.errors %}
+                                        <div class="text-danger">{{ form.venue.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.address.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.address.label }}
+                                </label>
+                                {{ form.address }}
+                                {% if form.address.errors %}
+                                    <div class="text-danger">{{ form.address.errors }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.online_platform.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.online_platform.label }}
+                                </label>
+                                {{ form.online_platform }}
+                                {% if form.online_platform.errors %}
+                                    <div class="text-danger">{{ form.online_platform.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Например: Zoom, Webinar, Яндекс Телемост</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. Описание и программа -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">4</span> Описание и программа</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.description.label }}
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger">{{ form.description.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Подробное описание целей, задач и тематики мероприятия</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.program.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.program.label }}
+                                </label>
+                                {{ form.program }}
+                                {% if form.program.errors %}
+                                    <div class="text-danger">{{ form.program.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Программа мероприятия (пленарные доклады, секции)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. Требования к участию -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">5</span> Требования к участию</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.requirements.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.requirements.label }}
+                                </label>
+                                {{ form.requirements }}
+                                {% if form.requirements.errors %}
+                                    <div class="text-danger">{{ form.requirements.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Текст требований к оформлению тезисов</div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.requirements_link.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.requirements_link.label }}
+                                    </label>
+                                    {{ form.requirements_link }}
+                                    {% if form.requirements_link.errors %}
+                                        <div class="text-danger">{{ form.requirements_link.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.requirements_link.help_text }}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.requirements_file.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.requirements_file.label }}
+                                    </label>
+                                    {{ form.requirements_file }}
+                                    {% if form.requirements_file.errors %}
+                                        <div class="text-danger">{{ form.requirements_file.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.requirements_file.help_text }}</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.participation_terms.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.participation_terms.label }}
+                                </label>
+                                {{ form.participation_terms }}
+                                {% if form.participation_terms.errors %}
+                                    <div class="text-danger">{{ form.participation_terms.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">Организационный взнос, проживание, трансфер</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. Научные направления -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">6</span> Научные направления</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="{{ form.topics.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.topics.label }}
+                                </label>
+                                {{ form.topics }}
+                                {% if form.topics.errors %}
+                                    <div class="text-danger">{{ form.topics.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.topics.help_text }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 7. Форматы участия и онлайн-доступ -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">7</span> Форматы участия</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.participation_format.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.participation_format.label }}
+                                    </label>
+                                    {{ form.participation_format }}
+                                    {% if form.participation_format.errors %}
+                                        <div class="text-danger">{{ form.participation_format.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.participation_format.help_text }}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.online_meeting_link.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.online_meeting_link.label }}
+                                    </label>
+                                    {{ form.online_meeting_link }}
+                                    {% if form.online_meeting_link.errors %}
+                                        <div class="text-danger">{{ form.online_meeting_link.errors }}</div>
+                                    {% endif %}
+                                    <div class="form-text">{{ form.online_meeting_link.help_text }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 8. Контактная информация -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">8</span> Контактная информация</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.contact_email.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.contact_email.label }}
+                                    </label>
+                                    {{ form.contact_email }}
+                                    {% if form.contact_email.errors %}
+                                        <div class="text-danger">{{ form.contact_email.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.contact_phone.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.contact_phone.label }}
+                                    </label>
+                                    {{ form.contact_phone }}
+                                    {% if form.contact_phone.errors %}
+                                        <div class="text-danger">{{ form.contact_phone.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.contact_person.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.contact_person.label }}
+                                </label>
+                                {{ form.contact_person }}
+                                {% if form.contact_person.errors %}
+                                    <div class="text-danger">{{ form.contact_person.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 9. Ссылки и материалы -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">9</span> Ссылки и материалы</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.website.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.website.label }}
+                                    </label>
+                                    {{ form.website }}
+                                    {% if form.website.errors %}
+                                        <div class="text-danger">{{ form.website.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="{{ form.call_for_papers.id_for_label }}" class="form-label fw-bold">
+                                        {{ form.call_for_papers.label }}
+                                    </label>
+                                    {{ form.call_for_papers }}
+                                    {% if form.call_for_papers.errors %}
+                                        <div class="text-danger">{{ form.call_for_papers.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Предпросмотр текущего постера -->
+                            {% if conference.poster %}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Текущий постер</label><br>
+                                <img src="{{ conference.poster.url }}" alt="Постер" style="max-height: 150px; border: 1px solid #ddd; padding: 5px; border-radius: 5px;">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="poster_clear" name="poster_clear">
+                                    <label class="form-check-label text-danger" for="poster_clear">
+                                        Удалить текущий постер
+                                    </label>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="mb-3">
+                                <label for="{{ form.poster.id_for_label }}" class="form-label fw-bold">Загрузить новый постер</label>
+                                {{ form.poster }}
+                                {% if form.poster.errors %}
+                                    <div class="text-danger">{{ form.poster.errors }}</div>
+                                {% endif %}
+                                <div class="form-text">{{ form.poster.help_text }} Оставьте пустым, чтобы сохранить текущий постер.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 10. Дополнительные опции -->
+                    <div class="card mb-4 border-primary">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><span class="badge bg-primary me-2">10</span> Дополнительные опции</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_featured }}
+                                        <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                                            <strong>{{ form.is_featured.label }}</strong>
+                                        </label>
+                                        <div class="form-text">Показывать на главной странице</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_free }}
+                                        <label class="form-check-label" for="{{ form.is_free.id_for_label }}">
+                                            <strong>{{ form.is_free.label }}</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.has_publications }}
+                                        <label class="form-check-label" for="{{ form.has_publications.id_for_label }}">
+                                            <strong>{{ form.has_publications.label }}</strong>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.publication_indexing.id_for_label }}" class="form-label fw-bold">
+                                    {{ form.publication_indexing.label }}
+                                </label>
+                                {{ form.publication_indexing }}
+                                {% if form.publication_indexing.errors %}
+                                    <div class="text-danger">{{ form.publication_indexing.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий -->
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div>
+                            <span class="text-muted small">
+                                <i class="bi bi-info-circle"></i> Поля со звездочкой (<span class="text-danger">*</span>) обязательны для заполнения
+                            </span>
+                        </div>
+                        <div>
+                            <a href="{% url 'organizations:org_conferences' %}" class="btn btn-secondary me-2">
+                                <i class="bi bi-x-lg"></i> Отмена
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Сохранить изменения
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<!-- JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Показываем/скрываем поле онлайн-платформы в зависимости от выбранного формата
+    const formatSelect = document.getElementById('{{ form.format.id_for_label }}');
+    const onlinePlatformField = document.getElementById('onlinePlatformField');
+
+    function toggleOnlinePlatform() {
+        if (formatSelect) {
+            const selectedValue = formatSelect.value;
+            if (selectedValue === 'online' || selectedValue === 'hybrid') {
+                onlinePlatformField.style.display = 'block';
+            } else {
+                onlinePlatformField.style.display = 'none';
+            }
+        }
+    }
+
+    if (formatSelect) {
+        formatSelect.addEventListener('change', toggleOnlinePlatform);
+        toggleOnlinePlatform();
+    }
+
+    // Проверка дат
+    const startDate = document.getElementById('{{ form.start_date.id_for_label }}');
+    const endDate = document.getElementById('{{ form.end_date.id_for_label }}');
+    const deadline = document.getElementById('{{ form.deadline.id_for_label }}');
+    const dateWarning = document.getElementById('dateWarning');
+
+    function validateDates() {
+        if (startDate.value && deadline.value) {
+            if (new Date(deadline.value) > new Date(startDate.value)) {
+                dateWarning.style.display = 'block';
+            } else {
+                dateWarning.style.display = 'none';
+            }
+        }
+    }
+
+    if (startDate && deadline) {
+        startDate.addEventListener('change', validateDates);
+        deadline.addEventListener('change', validateDates);
+        validateDates();
+    }
+
+    // Прогресс заполнения формы
+    const form = document.getElementById('conferenceForm');
+    const requiredFields = form.querySelectorAll('[required]');
+    const progressBar = document.getElementById('formProgress');
+
+    function updateProgress() {
+        let filled = 0;
+        requiredFields.forEach(field => {
+            if (field.value && field.value.trim() !== '') {
+                filled++;
+            }
+        });
+        const percent = (filled / requiredFields.length) * 100;
+        if (progressBar) {
+            progressBar.style.width = percent + '%';
+        }
+    }
+
+    requiredFields.forEach(field => {
+        field.addEventListener('input', updateProgress);
+    });
+    updateProgress();
+
+    // Предупреждение при уходе со страницы
+    let formChanged = false;
+    form.addEventListener('input', function() {
+        formChanged = true;
+    });
+
+    window.addEventListener('beforeunload', function(e) {
+        if (formChanged) {
+            e.preventDefault();
+            e.returnValue = 'У вас есть несохраненные изменения. Вы уверены, что хотите покинуть страницу?';
+        }
+    });
+
+    form.addEventListener('submit', function() {
+        formChanged = false;
+    });
+});
+</script>
+
+<!-- Стили -->
+<style>
+    .list-group-item.active {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+    .card-header.bg-light {
+        background-color: #f8f9fa !important;
+        border-bottom: 2px solid #0d6efd;
+    }
+    .badge.bg-primary {
+        background-color: #0d6efd !important;
+    }
+    .form-text {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .btn-outline-primary {
+        border-color: #0d6efd;
+        color: #0d6efd;
+    }
+    .btn-outline-primary:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+</style>
 {% endblock %}

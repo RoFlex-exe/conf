@@ -62,7 +62,7 @@ class OrganizationAdmin(admin.ModelAdmin):
     def conferences_count(self, obj):
         return obj.conf_count
 
-    conferences_count.short_description = 'Конференций'
+    conferences_count.short_description = 'Мероприятий'
 
     def view_on_site_link(self, obj):
         if obj.pk:

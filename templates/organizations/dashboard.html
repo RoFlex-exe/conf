@@ -20,7 +20,7 @@
                 <h5>{{ organization.name }}</h5>
                 <p class="text-muted">{{ organization.short_name }}</p>
 
-                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <!-- Кнопка для просмотра профиля организации -->
                 <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
                     <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
                 </a>
@@ -35,13 +35,13 @@
             <a href="{% url 'organizations:dashboard' %}" class="list-group-item list-group-item-action active">
                 <i class="bi bi-speedometer2"></i> Обзор
             </a>
-            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-calendar-event"></i> Мои конференции
-                <span class="badge bg-primary rounded-pill float-end">{{ total_conferences }}</span>
+            <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-event me-2"></i> Конференции ({{ organization.short_name }})</span>
+                <span class="badge bg-primary rounded-pill">{{ total_conferences }}</span>
             </a>
-            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
-                <i class="bi bi-people"></i> Заявки
-                <span class="badge bg-primary rounded-pill float-end">{{ total_applications }}</span>
+            <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-people me-2"></i> Заявки</span>
+                <span class="badge bg-primary rounded-pill">{{ total_applications }}</span>
             </a>
             <a href="{% url 'organizations:org_statistics' %}" class="list-group-item list-group-item-action">
                 <i class="bi bi-graph-up"></i> Статистика
@@ -53,7 +53,7 @@
 
         <div class="d-grid gap-2 mt-3">
             <a href="{% url 'organizations:create_conference' %}" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Создать конференцию
+                <i class="bi bi-plus-circle"></i> Создать мероприятие
             </a>
         </div>
     </div>
@@ -73,7 +73,7 @@
             <div class="col-md-3">
                 <div class="card text-white bg-primary">
                     <div class="card-body">
-                        <h5 class="card-title">Всего конференций</h5>
+                        <h5 class="card-title">Всего мероприятий</h5>
                         <h2 class="display-4">{{ total_conferences }}</h2>
                     </div>
                 </div>
@@ -132,13 +132,13 @@
             </div>
         </div>
 
-        <!-- Две колонки: последние конференции и последние заявки -->
+        <!-- Две колонки: последние мероприятия и последние заявки -->
         <div class="row">
-            <!-- Последние конференции -->
+            <!-- Последние мероприятия -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Последние конференции</h5>
+                        <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Последние мероприятия</h5>
                         <a href="{% url 'organizations:org_conferences' %}" class="btn btn-light btn-sm">Все →</a>
                     </div>
                     <div class="card-body">
@@ -166,9 +166,9 @@
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p class="text-muted">У вас пока нет конференций</p>
+                            <p class="text-muted">У вас пока нет мероприятий</p>
                             <a href="{% url 'organizations:create_conference' %}" class="btn btn-primary btn-sm">
-                                Создать первую конференцию
+                                Создать первое мероприятие
                             </a>
                         {% endif %}
                     </div>
@@ -224,7 +224,7 @@
                 <div class="row">
                     <div class="col-md-3">
                         <a href="{% url 'organizations:create_conference' %}" class="btn btn-outline-primary w-100">
-                            <i class="bi bi-plus-circle"></i> Создать<br>конференцию
+                            <i class="bi bi-plus-circle"></i> Создать<br>мероприятие
                         </a>
                     </div>
                     <div class="col-md-3">

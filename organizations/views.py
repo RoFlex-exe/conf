@@ -1,6 +1,4 @@
 # organizations/views.py
-# organizations/views.py (дополняем существующий файл)
-
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView
 from django.contrib.auth.decorators import login_required
@@ -10,25 +8,174 @@ from django.utils import timezone
 from datetime import date, timedelta
 from .models import Organization, OrganizationDocument
 from conferences.models import Conference, ConferenceApplication, Topic
+from notifications.models import Notification
 from .forms import ConferenceForm, ConferenceApplicationStatusForm
+from django.core.paginator import Paginator
+from collections import Counter
 
 
-# ... (предыдущие классы остаются без изменений) ...
+class OrganizationListView(ListView):
+    """
+    Список всех организаций
+    """
+    model = Organization
+    template_name = 'organizations/organization_list.html'
+    context_object_name = 'organizations'
+    paginate_by = 12
+
+    def get_queryset(self):
+        queryset = Organization.objects.filter(is_active=True, is_verified=True)
+
+        q = self.request.GET.get('q')
+        if q:
+            queryset = queryset.filter(
+                Q(name__icontains=q) |
+                Q(short_name__icontains=q) |
+                Q(description__icontains=q)
+            )
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['total_organizations'] = Organization.objects.filter(
+            is_active=True, is_verified=True
+        ).count()
+        return context
+
+
+class OrganizationDetailView(DetailView):
+    """
+    Детальная страница организации
+    """
+    model = Organization
+    template_name = 'organizations/organization_detail.html'
+    context_object_name = 'organization'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        organization = self.get_object()
+
+        context['conferences'] = Conference.objects.filter(
+            organization=organization,
+            status=Conference.Status.PUBLISHED
+        ).order_by('-start_date')[:5]
+
+        all_conferences = Conference.objects.filter(organization=organization)
+        context['total_conferences'] = all_conferences.count()
+        context['upcoming_conferences'] = all_conferences.filter(
+            start_date__gte=date.today()
+        ).count()
+        context['past_conferences'] = all_conferences.filter(
+            end_date__lt=date.today()
+        ).count()
+
+        if self.request.user.is_authenticated:
+            context['is_favorite'] = organization.favorited_by.filter(
+                user=self.request.user
+            ).exists()
+
+        return context
+
 
 @login_required
-def create_conference(request):
+def organization_dashboard(request):
     """
-    Создание новой конференции
+    Личный кабинет организации
     """
     try:
         organization = request.user.organization
     except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа к созданию конференций')
+        messages.error(request, 'У вас нет доступа к панели организации')
         return redirect('home')
 
     if not organization.is_active:
-        messages.error(request, 'Организация не активна. Договор не заключён или просрочен.')
+        messages.warning(request, 'Договор с организацией не активен. Доступ ограничен.')
+        return redirect('home')
+
+    conferences = Conference.objects.filter(organization=organization)
+    today = date.today()
+
+    applications = ConferenceApplication.objects.filter(
+        conference__in=conferences
+    ).select_related('conference', 'user')
+
+    context = {
+        'organization': organization,
+        'total_conferences': conferences.count(),
+        'published_conferences': conferences.filter(status=Conference.Status.PUBLISHED).count(),
+        'pending_conferences': conferences.filter(status=Conference.Status.PENDING).count(),
+        'draft_conferences': conferences.filter(status=Conference.Status.DRAFT).count(),
+        'recent_conferences': conferences.order_by('-created_at')[:5],
+        'total_applications': applications.count(),
+        'new_applications': applications.filter(status='new').count(),
+        'total_views': conferences.aggregate(Sum('view_count'))['view_count__sum'] or 0,
+        'upcoming_conferences': conferences.filter(start_date__gte=today).count(),
+        'recent_applications': applications.order_by('-created_at')[:10],
+    }
+
+    return render(request, 'organizations/dashboard.html', context)
+
+
+@login_required
+def organization_conferences(request):
+    """
+    Управление мероприятиями организации
+    """
+    try:
+        organization = request.user.organization
+    except Organization.DoesNotExist:
+        messages.error(request, 'У вас нет доступа')
+        return redirect('home')
+
+    status_filter = request.GET.get('status', 'all')
+
+    conferences = Conference.objects.filter(organization=organization)
+
+    if status_filter != 'all':
+        conferences = conferences.filter(status=status_filter)
+
+    conferences = conferences.order_by('-created_at')
+
+    status_counts = {
+        'all': Conference.objects.filter(organization=organization).count(),
+        'published': Conference.objects.filter(organization=organization, status=Conference.Status.PUBLISHED).count(),
+        'pending': Conference.objects.filter(organization=organization, status=Conference.Status.PENDING).count(),
+        'draft': Conference.objects.filter(organization=organization, status=Conference.Status.DRAFT).count(),
+        'archived': Conference.objects.filter(organization=organization, status=Conference.Status.ARCHIVED).count(),
+        'rejected': Conference.objects.filter(organization=organization, status=Conference.Status.REJECTED).count(),
+    }
+
+    paginator = Paginator(conferences, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'organizations/conferences.html', {
+        'organization': organization,
+        'conferences': page_obj,
+        'status_counts': status_counts,
+        'current_status': status_filter,
+    })
+
+
+# organizations/views.py (фрагмент с create_conference)
+
+@login_required
+def create_conference(request):
+    """
+    Создание нового мероприятия
+    """
+    try:
+        organization = request.user.organization
+    except Organization.DoesNotExist:
+        messages.error(request, 'У вас нет доступа к созданию мероприятий')
+        return redirect('home')
+
+    if not organization.is_active:
+        messages.error(request, 'Организация не активна')
         return redirect('organizations:dashboard')
+
+    total_conferences = Conference.objects.filter(organization=organization).count()
 
     if request.method == 'POST':
         form = ConferenceForm(request.POST, request.FILES)
@@ -36,23 +183,23 @@ def create_conference(request):
             conference = form.save(commit=False)
             conference.organization = organization
 
-            # Если пользователь не админ, ставим статус на модерацию
+            # Если пользователь не суперпользователь, отправляем на модерацию
             if not request.user.is_superuser:
                 conference.status = Conference.Status.PENDING
 
             conference.save()
             form.save_m2m()  # Сохраняем ManyToMany поля (topics)
 
-            messages.success(request, f'Конференция "{conference.title}" успешно создана!')
+            messages.success(request, f'Мероприятие "{conference.title}" успешно создано!')
 
             if conference.status == Conference.Status.PENDING:
-                messages.info(request, 'Конференция отправлена на модерацию. После проверки она будет опубликована.')
+                messages.info(request, 'Мероприятие отправлено на модерацию. После проверки оно будет опубликовано.')
 
             return redirect('organizations:org_conferences')
         else:
             messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
-        # Предзаполняем некоторые поля
+        # Предзаполняем поля данными организации
         initial_data = {
             'contact_email': organization.contact_email,
             'contact_phone': organization.contact_phone,
@@ -60,20 +207,20 @@ def create_conference(request):
         }
         form = ConferenceForm(initial=initial_data)
 
-    # Получаем все тематики для выбора
-    topics = Topic.objects.filter(is_active=True)
+    topics = Topic.objects.filter(is_active=True).order_by('name')
 
     return render(request, 'organizations/create_conference.html', {
         'organization': organization,
         'form': form,
         'topics': topics,
+        'total_conferences': total_conferences,
     })
 
 
 @login_required
 def edit_conference(request, pk):
     """
-    Редактирование конференции
+    Редактирование мероприятия
     """
     try:
         organization = request.user.organization
@@ -82,6 +229,7 @@ def edit_conference(request, pk):
         return redirect('home')
 
     conference = get_object_or_404(Conference, pk=pk, organization=organization)
+    total_conferences = Conference.objects.filter(organization=organization).count()
 
     if request.method == 'POST':
         form = ConferenceForm(request.POST, request.FILES, instance=conference)
@@ -91,30 +239,38 @@ def edit_conference(request, pk):
             # Если конференция была опубликована и её редактируют, отправляем на модерацию
             if conference.status == Conference.Status.PUBLISHED and not request.user.is_superuser:
                 edited_conference.status = Conference.Status.PENDING
-                messages.warning(request, 'Конференция отправлена на повторную модерацию после изменений.')
+                messages.warning(request, 'Мероприятие отправлено на повторную модерацию после изменений.')
+
+            # Обработка удаления постера
+            if request.POST.get('poster_clear') == 'on':
+                edited_conference.poster.delete(save=False)
+                edited_conference.poster = None
 
             edited_conference.save()
-            form.save_m2m()
+            form.save_m2m()  # Сохраняем ManyToMany поля (topics)
 
-            messages.success(request, f'Конференция "{conference.title}" успешно обновлена!')
+            messages.success(request, f'Мероприятие "{conference.title}" успешно обновлено!')
             return redirect('organizations:org_conferences')
+        else:
+            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = ConferenceForm(instance=conference)
 
-    topics = Topic.objects.filter(is_active=True)
+    topics = Topic.objects.filter(is_active=True).order_by('name')
 
     return render(request, 'organizations/edit_conference.html', {
         'organization': organization,
         'conference': conference,
         'form': form,
         'topics': topics,
+        'total_conferences': total_conferences,
     })
 
 
 @login_required
 def delete_conference(request, pk):
     """
-    Удаление конференции
+    Удаление мероприятия
     """
     try:
         organization = request.user.organization
@@ -123,23 +279,25 @@ def delete_conference(request, pk):
         return redirect('home')
 
     conference = get_object_or_404(Conference, pk=pk, organization=organization)
+    total_conferences = Conference.objects.filter(organization=organization).count()
 
     if request.method == 'POST':
         conference_title = conference.title
         conference.delete()
-        messages.success(request, f'Конференция "{conference_title}" удалена')
+        messages.success(request, f'Мероприятие "{conference_title}" удалено')
         return redirect('organizations:org_conferences')
 
     return render(request, 'organizations/delete_conference.html', {
         'organization': organization,
         'conference': conference,
+        'total_conferences': total_conferences,
     })
 
 
 @login_required
 def organization_applications(request):
     """
-    Заявки на конференции организации
+    Заявки на мероприятия организации
     """
     try:
         organization = request.user.organization
@@ -147,22 +305,18 @@ def organization_applications(request):
         messages.error(request, 'У вас нет доступа')
         return redirect('home')
 
-    # Получаем все заявки на конференции этой организации
     applications = ConferenceApplication.objects.filter(
         conference__organization=organization
     ).select_related('conference', 'user').order_by('-created_at')
 
-    # Фильтрация по статусу
     status_filter = request.GET.get('status', 'all')
     if status_filter != 'all':
         applications = applications.filter(status=status_filter)
 
-    # Фильтрация по конференции
     conference_filter = request.GET.get('conference')
     if conference_filter:
         applications = applications.filter(conference_id=conference_filter)
 
-    # Поиск по имени или email
     search_query = request.GET.get('q')
     if search_query:
         applications = applications.filter(
@@ -171,7 +325,6 @@ def organization_applications(request):
             Q(presentation_title__icontains=search_query)
         )
 
-    # Статистика по статусам
     status_counts = {
         'all': applications.count(),
         'new': applications.filter(status='new').count(),
@@ -182,11 +335,8 @@ def organization_applications(request):
         'cancelled': applications.filter(status='cancelled').count(),
     }
 
-    # Список конференций для фильтра
     conferences = Conference.objects.filter(organization=organization)
 
-    # Пагинация
-    from django.core.paginator import Paginator
     paginator = Paginator(applications, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -222,28 +372,59 @@ def application_detail(request, pk):
     if request.method == 'POST':
         form = ConferenceApplicationStatusForm(request.POST)
         if form.is_valid():
-            application.status = form.cleaned_data['status']
+            old_status = application.status
+            new_status = form.cleaned_data['status']
+
+            application.status = new_status
             application.organizer_comment = form.cleaned_data['organizer_comment']
+
+            # Если статус меняется на "подтверждена", добавляем ссылку на встречу
+            if new_status == 'confirmed':
+                meeting_link = form.cleaned_data.get('meeting_link', '')
+                if meeting_link:
+                    application.meeting_link = meeting_link
+
+                # Создаём уведомление для участника
+                Notification.objects.create(
+                    user=application.user,
+                    notification_type='application',
+                    title='Ваша заявка подтверждена',
+                    message=f'Ваша заявка на участие в мероприятии "{application.conference.title}" подтверждена.',
+                    conference=application.conference
+                )
+
+                # Если участник выбрал дистанционный формат, отправляем ссылку
+                if application.participation_format == 'online' and meeting_link:
+                    Notification.objects.create(
+                        user=application.user,
+                        notification_type='application',
+                        title='Ссылка для подключения',
+                        message=f'Ссылка для дистанционного участия: {meeting_link}',
+                        conference=application.conference
+                    )
+
             application.save()
             messages.success(request, f'Статус заявки изменён на "{application.get_status_display()}"')
             return redirect('organizations:application_detail', pk=application.pk)
     else:
         form = ConferenceApplicationStatusForm(initial={
             'status': application.status,
-            'organizer_comment': application.organizer_comment
+            'organizer_comment': application.organizer_comment,
+            'meeting_link': application.meeting_link or application.conference.online_meeting_link,
         })
 
     return render(request, 'organizations/application_detail.html', {
         'organization': organization,
         'application': application,
         'form': form,
+        'application_status_choices': ConferenceApplication.ApplicationStatus.choices,
     })
 
 
 @login_required
 def update_application_status(request, pk):
     """
-    Быстрое обновление статуса заявки (AJAX)
+    Быстрое обновление статуса заявки
     """
     try:
         organization = request.user.organization
@@ -260,11 +441,34 @@ def update_application_status(request, pk):
     if request.method == 'POST':
         new_status = request.POST.get('status')
         comment = request.POST.get('organizer_comment', '')
+        meeting_link = request.POST.get('meeting_link', '')
 
         if new_status in dict(ConferenceApplication.ApplicationStatus.choices):
+            old_status = application.status
             application.status = new_status
             if comment:
                 application.organizer_comment = comment
+
+            if new_status == 'confirmed' and meeting_link:
+                application.meeting_link = meeting_link
+
+                Notification.objects.create(
+                    user=application.user,
+                    notification_type='application',
+                    title='Ваша заявка подтверждена',
+                    message=f'Ваша заявка на участие в мероприятии "{application.conference.title}" подтверждена.',
+                    conference=application.conference
+                )
+
+                if application.participation_format == 'online' and meeting_link:
+                    Notification.objects.create(
+                        user=application.user,
+                        notification_type='application',
+                        title='Ссылка для подключения',
+                        message=f'Ссылка для дистанционного участия: {meeting_link}',
+                        conference=application.conference
+                    )
+
             application.save()
             messages.success(request, f'Статус заявки изменён на "{application.get_status_display()}"')
         else:
@@ -287,17 +491,14 @@ def organization_statistics(request):
     conferences = Conference.objects.filter(organization=organization)
     today = date.today()
 
-    # Общая статистика
     total_conferences = conferences.count()
     total_views = conferences.aggregate(Sum('view_count'))['view_count__sum'] or 0
     total_favorites = conferences.aggregate(Sum('favorites_count'))['favorites_count__sum'] or 0
     total_applications = conferences.aggregate(Sum('applications_count'))['applications_count__sum'] or 0
 
-    # Средние показатели
     avg_views = total_views / total_conferences if total_conferences else 0
     avg_applications = total_applications / total_conferences if total_conferences else 0
 
-    # Статистика по статусам
     status_stats = {
         'published': conferences.filter(status=Conference.Status.PUBLISHED).count(),
         'pending': conferences.filter(status=Conference.Status.PENDING).count(),
@@ -306,10 +507,10 @@ def organization_statistics(request):
         'rejected': conferences.filter(status=Conference.Status.REJECTED).count(),
     }
 
-    # Статистика по типам
+    # Статистика по типам мероприятий
     type_stats = {}
-    for type_code, type_name in Conference.ConferenceType.choices:
-        count = conferences.filter(conference_type=type_code).count()
+    for type_code, type_name in Conference.EventType.choices:
+        count = conferences.filter(event_type=type_code).count()
         if count > 0:
             type_stats[type_name] = count
 
@@ -320,29 +521,7 @@ def organization_statistics(request):
         if count > 0:
             format_stats[format_name] = count
 
-    # Конференции по месяцам (последние 12 месяцев)
-    monthly_stats = []
-    for i in range(11, -1, -1):
-        month_start = today.replace(day=1) - timedelta(days=30 * i)
-        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-
-        created_count = conferences.filter(
-            created_at__date__gte=month_start,
-            created_at__date__lte=month_end
-        ).count()
-
-        start_count = conferences.filter(
-            start_date__gte=month_start,
-            start_date__lte=month_end
-        ).count()
-
-        monthly_stats.append({
-            'month': month_start.strftime('%B %Y'),
-            'created': created_count,
-            'starting': start_count
-        })
-
-    # Топ конференций
+    # Топ мероприятий
     top_by_views = conferences.order_by('-view_count')[:5]
     top_by_favorites = conferences.order_by('-favorites_count')[:5]
     top_by_applications = conferences.order_by('-applications_count')[:5]
@@ -353,7 +532,6 @@ def organization_statistics(request):
         for topic in conference.topics.all():
             topic_stats.append(topic.name)
 
-    from collections import Counter
     topic_counter = Counter(topic_stats).most_common(10)
 
     context = {
@@ -367,7 +545,6 @@ def organization_statistics(request):
         'status_stats': status_stats,
         'type_stats': type_stats,
         'format_stats': format_stats,
-        'monthly_stats': monthly_stats,
         'top_by_views': top_by_views,
         'top_by_favorites': top_by_favorites,
         'top_by_applications': top_by_applications,
@@ -380,7 +557,7 @@ def organization_statistics(request):
 @login_required
 def organization_profile(request):
     """
-    Редактирование профиля организации
+    Редактирование профиля организации (без логотипа)
     """
     try:
         organization = request.user.organization
@@ -389,7 +566,7 @@ def organization_profile(request):
         return redirect('home')
 
     if request.method == 'POST':
-        # Обновляем основные поля
+        # Обновляем только текстовые поля, логотип не трогаем
         organization.contact_person = request.POST.get('contact_person', organization.contact_person)
         organization.contact_position = request.POST.get('contact_position', organization.contact_position)
         organization.contact_email = request.POST.get('contact_email', organization.contact_email)
@@ -397,9 +574,9 @@ def organization_profile(request):
         organization.website = request.POST.get('website', organization.website)
         organization.description = request.POST.get('description', organization.description)
 
-        # Обработка логотипа
-        if 'logo' in request.FILES:
-            organization.logo = request.FILES['logo']
+        # Логотип НЕ обновляем - это делает только администратор
+        # if 'logo' in request.FILES:
+        #     organization.logo = request.FILES['logo']
 
         organization.save()
         messages.success(request, 'Профиль организации обновлён')
@@ -410,417 +587,31 @@ def organization_profile(request):
     })
 
 
-class OrganizationListView(ListView):
-    """
-    Список всех организаций
-    """
-    model = Organization
-    template_name = 'organizations/organization_list.html'
-    context_object_name = 'organizations'
-    paginate_by = 12
-
-    def get_queryset(self):
-        queryset = Organization.objects.filter(is_active=True, is_verified=True)
-
-        # Поиск по названию
-        q = self.request.GET.get('q')
-        if q:
-            queryset = queryset.filter(
-                Q(name__icontains=q) |
-                Q(short_name__icontains=q) |
-                Q(description__icontains=q)
-            )
-
-        return queryset
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['total_organizations'] = Organization.objects.filter(
-            is_active=True, is_verified=True
-        ).count()
-        return context
-
-
-class OrganizationDetailView(DetailView):
-    """
-    Детальная страница организации
-    """
-    model = Organization
-    template_name = 'organizations/organization_detail.html'
-    context_object_name = 'organization'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        organization = self.get_object()
-
-        # Конференции этой организации
-        context['conferences'] = Conference.objects.filter(
-            organization=organization,
-            status=Conference.Status.PUBLISHED
-        ).order_by('-start_date')[:5]
-
-        # Все конференции для подсчета
-        all_conferences = Conference.objects.filter(organization=organization)
-
-        # Статистика
-        context['total_conferences'] = all_conferences.count()
-        context['upcoming_conferences'] = all_conferences.filter(
-            start_date__gte=date.today()
-        ).count()
-        context['past_conferences'] = all_conferences.filter(
-            end_date__lt=date.today()
-        ).count()
-
-        # Проверка, добавил ли пользователь в избранное
-        if self.request.user.is_authenticated:
-            context['is_favorite'] = organization.favorited_by.filter(
-                user=self.request.user
-            ).exists()
-
-        return context
-
-
-@login_required
-def organization_dashboard(request):
-    """
-    Личный кабинет организации
-    """
-    # Проверяем, есть ли у пользователя организация
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа к панели организации')
-        return redirect('home')
-
-    if not organization.is_active:
-        messages.warning(request, 'Договор с организацией не активен. Доступ ограничен.')
-        return redirect('home')
-
-    # Статистика для дашборда
-    conferences = Conference.objects.filter(organization=organization)
-    today = date.today()
-
-    # Заявки на все конференции организации
-    applications = ConferenceApplication.objects.filter(
-        conference__in=conferences
-    ).select_related('conference', 'user')
-
-    context = {
-        'organization': organization,
-        'total_conferences': conferences.count(),
-        'published_conferences': conferences.filter(status=Conference.Status.PUBLISHED).count(),
-        'pending_conferences': conferences.filter(status=Conference.Status.PENDING).count(),
-        'draft_conferences': conferences.filter(status=Conference.Status.DRAFT).count(),
-        'recent_conferences': conferences.order_by('-created_at')[:5],
-        'total_applications': applications.count(),
-        'new_applications': applications.filter(status='new').count(),
-        'total_views': conferences.aggregate(Sum('view_count'))['view_count__sum'] or 0,
-        'upcoming_conferences': conferences.filter(start_date__gte=today).count(),
-        'recent_applications': applications.order_by('-created_at')[:10],
-    }
-
-    return render(request, 'organizations/dashboard.html', context)
-
-
-@login_required
-def organization_conferences(request):
-    """
-    Управление конференциями организации
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    # Фильтрация по статусу
-    status_filter = request.GET.get('status', 'all')
-
-    conferences = Conference.objects.filter(organization=organization)
-
-    if status_filter != 'all':
-        conferences = conferences.filter(status=status_filter)
-
-    conferences = conferences.order_by('-created_at')
-
-    # Статистика по статусам
-    status_counts = {
-        'all': Conference.objects.filter(organization=organization).count(),
-        'published': Conference.objects.filter(organization=organization, status=Conference.Status.PUBLISHED).count(),
-        'pending': Conference.objects.filter(organization=organization, status=Conference.Status.PENDING).count(),
-        'draft': Conference.objects.filter(organization=organization, status=Conference.Status.DRAFT).count(),
-        'archived': Conference.objects.filter(organization=organization, status=Conference.Status.ARCHIVED).count(),
-        'rejected': Conference.objects.filter(organization=organization, status=Conference.Status.REJECTED).count(),
-    }
-
-    # Пагинация
-    from django.core.paginator import Paginator
-    paginator = Paginator(conferences, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    return render(request, 'organizations/conferences.html', {
-        'organization': organization,
-        'conferences': page_obj,
-        'status_counts': status_counts,
-        'current_status': status_filter,
-    })
-
-
-@login_required
-def create_conference(request):
-    """
-    Создание новой конференции
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    if not organization.is_active:
-        messages.error(request, 'Организация не активна')
-        return redirect('organizations:dashboard')
-
-    if request.method == 'POST':
-        # TODO: Создать форму для конференции
-        # Пока создадим заглушку
-        messages.success(request, 'Функция создания конференции будет доступна в следующем обновлении')
-        return redirect('organizations:org_conferences')
-
-    return render(request, 'organizations/create_conference.html', {
-        'organization': organization
-    })
-
-
-@login_required
-def edit_conference(request, pk):
-    """
-    Редактирование конференции
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    # Получаем конференцию и проверяем, что она принадлежит этой организации
-    conference = get_object_or_404(Conference, pk=pk, organization=organization)
-
-    if request.method == 'POST':
-        # TODO: Добавить форму редактирования
-        messages.success(request, f'Конференция "{conference.title}" обновлена')
-        return redirect('organizations:org_conferences')
-
-    return render(request, 'organizations/edit_conference.html', {
-        'organization': organization,
-        'conference': conference,
-    })
-
-
-@login_required
-def delete_conference(request, pk):
-    """
-    Удаление конференции
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    conference = get_object_or_404(Conference, pk=pk, organization=organization)
-
-    if request.method == 'POST':
-        conference_title = conference.title
-        conference.delete()
-        messages.success(request, f'Конференция "{conference_title}" удалена')
-        return redirect('organizations:org_conferences')
-
-    return render(request, 'organizations/delete_conference.html', {
-        'organization': organization,
-        'conference': conference,
-    })
-
-
-@login_required
-def organization_statistics(request):
-    """
-    Статистика для организации
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    conferences = Conference.objects.filter(organization=organization)
-    today = date.today()
-
-    # Общая статистика
-    total_conferences = conferences.count()
-    total_views = conferences.aggregate(Sum('view_count'))['view_count__sum'] or 0
-    total_favorites = conferences.aggregate(Sum('favorites_count'))['favorites_count__sum'] or 0
-    total_applications = conferences.aggregate(Sum('applications_count'))['applications_count__sum'] or 0
-
-    # Статистика по статусам
-    by_status = {
-        'draft': conferences.filter(status=Conference.Status.DRAFT).count(),
-        'pending': conferences.filter(status=Conference.Status.PENDING).count(),
-        'published': conferences.filter(status=Conference.Status.PUBLISHED).count(),
-        'rejected': conferences.filter(status=Conference.Status.REJECTED).count(),
-        'archived': conferences.filter(status=Conference.Status.ARCHIVED).count(),
-    }
-
-    # Статистика по типам
-    by_type = {}
-    for type_code, type_name in Conference.ConferenceType.choices:
-        count = conferences.filter(conference_type=type_code).count()
-        if count > 0:
-            by_type[type_name] = count
-
-    # Статистика по форматам
-    by_format = {}
-    for format_code, format_name in Conference.Format.choices:
-        count = conferences.filter(format=format_code).count()
-        if count > 0:
-            by_format[format_name] = count
-
-    # Конференции по месяцам (последние 12 месяцев)
-    last_12_months = []
-    for i in range(11, -1, -1):
-        month_start = today.replace(day=1) - timedelta(days=30 * i)
-        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-        count = conferences.filter(
-            created_at__date__gte=month_start,
-            created_at__date__lte=month_end
-        ).count()
-        last_12_months.append({
-            'month': month_start.strftime('%B %Y'),
-            'count': count
-        })
-
-    # Топ конференций по просмотрам
-    top_by_views = conferences.order_by('-view_count')[:5]
-
-    # Топ конференций по заявкам
-    top_by_applications = conferences.order_by('-applications_count')[:5]
-
-    context = {
-        'organization': organization,
-        'total_conferences': total_conferences,
-        'total_views': total_views,
-        'total_favorites': total_favorites,
-        'total_applications': total_applications,
-        'by_status': by_status,
-        'by_type': by_type,
-        'by_format': by_format,
-        'last_12_months': last_12_months,
-        'top_by_views': top_by_views,
-        'top_by_applications': top_by_applications,
-    }
-
-    return render(request, 'organizations/statistics.html', context)
-
-
-@login_required
-def organization_applications(request):
-    """
-    Заявки на конференции организации
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    # Получаем все заявки на конференции этой организации
-    applications = ConferenceApplication.objects.filter(
-        conference__organization=organization
-    ).select_related('conference', 'user').order_by('-created_at')
-
-    # Фильтрация по статусу
-    status_filter = request.GET.get('status', 'all')
-    if status_filter != 'all':
-        applications = applications.filter(status=status_filter)
-
-    # Фильтрация по конференции
-    conference_filter = request.GET.get('conference')
-    if conference_filter:
-        applications = applications.filter(conference_id=conference_filter)
-
-    # Статистика по статусам
-    status_counts = {
-        'all': applications.count(),
-        'new': applications.filter(status='new').count(),
-        'under_review': applications.filter(status='under_review').count(),
-        'accepted': applications.filter(status='accepted').count(),
-        'rejected': applications.filter(status='rejected').count(),
-        'confirmed': applications.filter(status='confirmed').count(),
-        'cancelled': applications.filter(status='cancelled').count(),
-    }
-
-    # Список конференций для фильтра
-    conferences = Conference.objects.filter(organization=organization)
-
-    return render(request, 'organizations/applications.html', {
-        'organization': organization,
-        'applications': applications,
-        'status_counts': status_counts,
-        'current_status': status_filter,
-        'conferences': conferences,
-        'current_conference': conference_filter,
-    })
-
-
-@login_required
-def update_application_status(request, pk):
-    """
-    Обновление статуса заявки
-    """
-    try:
-        organization = request.user.organization
-    except Organization.DoesNotExist:
-        messages.error(request, 'У вас нет доступа')
-        return redirect('home')
-
-    application = get_object_or_404(
-        ConferenceApplication,
-        pk=pk,
-        conference__organization=organization
-    )
-
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        comment = request.POST.get('organizer_comment', '')
-
-        if new_status in dict(ConferenceApplication.ApplicationStatus.choices):
-            application.status = new_status
-            if comment:
-                application.organizer_comment = comment
-            application.save()
-            messages.success(request, f'Статус заявки изменен на "{application.get_status_display()}"')
-        else:
-            messages.error(request, 'Некорректный статус')
-
-    return redirect('organizations:org_applications')
-
+# organizations/views.py - добавь эту функцию
 
 @login_required
 def toggle_favorite_org(request, pk):
     """
     Добавление/удаление организации из избранного
     """
+    from conferences.models import FavoriteOrganization
+
     organization = get_object_or_404(Organization, pk=pk, is_active=True)
 
     if request.method == 'POST':
-        favorite = organization.favorited_by.filter(user=request.user).first()
+        favorite = FavoriteOrganization.objects.filter(
+            user=request.user,
+            organization=organization
+        ).first()
 
         if favorite:
             favorite.delete()
             messages.success(request, f'Организация "{organization.name}" удалена из избранного')
         else:
-            organization.favorited_by.create(user=request.user)
+            FavoriteOrganization.objects.create(
+                user=request.user,
+                organization=organization
+            )
             messages.success(request, f'Организация "{organization.name}" добавлена в избранное')
 
     return redirect('organizations:organization_detail', pk=organization.pk)

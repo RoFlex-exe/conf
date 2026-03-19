@@ -18,7 +18,7 @@
                 {% endif %}
                 <h5>{{ organization.name }}</h5>
 
-                <!-- Кнопка для просмотра профиля организации (ДОБАВЛЕНА) -->
+                <!-- Кнопка для просмотра профиля организации -->
                 <a href="{% url 'organizations:organization_detail' organization.pk %}" class="btn btn-outline-primary btn-sm mb-2" target="_blank">
                     <i class="bi bi-box-arrow-up-right"></i> Просмотр профиля организации
                 </a>
@@ -30,7 +30,7 @@
                 <i class="bi bi-speedometer2"></i> Обзор
             </a>
             <a href="{% url 'organizations:org_conferences' %}" class="list-group-item list-group-item-action active">
-                <i class="bi bi-calendar-event"></i> Мои конференции
+                <i class="bi bi-calendar-event"></i> Конференции ({{ organization.short_name }})
                 <span class="badge bg-primary rounded-pill float-end">{{ status_counts.all }}</span>
             </a>
             <a href="{% url 'organizations:org_applications' %}" class="list-group-item list-group-item-action">
@@ -46,7 +46,7 @@
 
         <div class="d-grid gap-2 mt-3">
             <a href="{% url 'organizations:create_conference' %}" class="btn btn-success">
-                <i class="bi bi-plus-circle"></i> Создать конференцию
+                <i class="bi bi-plus-circle"></i> Создать мероприятие
             </a>
         </div>
     </div>
@@ -54,9 +54,9 @@
     <div class="col-md-9">
         <div class="card">
             <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h4 class="mb-0"><i class="bi bi-calendar-event"></i> Мои конференции</h4>
+                <h4 class="mb-0"><i class="bi bi-calendar-event"></i> Конференции ({{ organization.short_name }})</h4>
                 <a href="{% url 'organizations:create_conference' %}" class="btn btn-light btn-sm">
-                    <i class="bi bi-plus-circle"></i> Новая конференция
+                    <i class="bi bi-plus-circle"></i> Новое мероприятие
                 </a>
             </div>
             <div class="card-body">
@@ -90,6 +90,7 @@
                             <thead>
                                 <tr>
                                     <th>Название</th>
+                                    <th>Тип</th>
                                     <th>Даты</th>
                                     <th>Статус</th>
                                     <th>Просмотры</th>
@@ -109,6 +110,25 @@
                                             {% endif %}
                                         </td>
                                         <td>
+                                            {% if conference.event_type == 'conference' %}
+                                                📝 Конференция
+                                            {% elif conference.event_type == 'forum' %}
+                                                🗣️ Форум
+                                            {% elif conference.event_type == 'seminar' %}
+                                                📚 Семинар
+                                            {% elif conference.event_type == 'round_table' %}
+                                                🔄 Круглый стол
+                                            {% elif conference.event_type == 'symposium' %}
+                                                🎯 Симпозиум
+                                            {% elif conference.event_type == 'congress' %}
+                                                🌍 Конгресс
+                                            {% elif conference.event_type == 'school' %}
+                                                🎓 Школа
+                                            {% elif conference.event_type == 'workshop' %}
+                                                🔧 Мастер-класс
+                                            {% endif %}
+                                        </td>
+                                        <td>
                                             {{ conference.start_date|date:"d.m.Y" }}<br>
                                             <small class="text-muted">до {{ conference.end_date|date:"d.m.Y" }}</small>
                                         </td>
@@ -122,7 +142,7 @@
                                                 {{ conference.get_status_display }}
                                             </span>
                                             {% if conference.is_featured %}
-                                                <br><span class="badge bg-warning mt-1">Рекомендуемая</span>
+                                                <br><span class="badge bg-warning mt-1">Рекомендуемое</span>
                                             {% endif %}
                                         </td>
                                         <td class="text-center">
@@ -191,8 +211,8 @@
 
                 {% else %}
                     <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> У вас пока нет конференций.
-                        <a href="{% url 'organizations:create_conference' %}" class="alert-link">Создать первую конференцию</a>
+                        <i class="bi bi-info-circle"></i> У вас пока нет мероприятий.
+                        <a href="{% url 'organizations:create_conference' %}" class="alert-link">Создать первое мероприятие</a>
                     </div>
                 {% endif %}
             </div>
